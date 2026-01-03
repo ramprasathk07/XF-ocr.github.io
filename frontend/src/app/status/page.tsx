@@ -16,6 +16,7 @@ interface HealthData {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/xfinite-ocr' : '');
 
 export default function StatusPage() {
     const [health, setHealth] = useState<HealthData | null>(null);
@@ -45,7 +46,7 @@ export default function StatusPage() {
             <header className="navbar">
                 <div className="nav-left">
                     <div className="logo">
-                        <img src="/logo.png" alt="Xfinite" className="logo-img" />
+                        <img src={`${BASE_PATH}/logo.png`} alt="Xfinite" className="logo-img" />
                         <span>Xfinite</span>
                     </div>
                     <nav className="nav-links">
