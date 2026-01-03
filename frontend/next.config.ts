@@ -4,9 +4,9 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
   output: 'export',
-  // Exactly matching your repository name
-  basePath: isProd ? '/XF-ocr.github.io' : '',
-  assetPrefix: isProd ? '/XF-ocr.github.io/' : '',
+  // Strictly following the provided GitHub Pages guide
+  basePath: '/XF-ocr.github.io',
+  assetPrefix: '/XF-ocr.github.io/',
   trailingSlash: true,
   images: {
     unoptimized: true,

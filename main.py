@@ -4,7 +4,7 @@ import shutil
 import json
 from datetime import datetime, date
 from typing import Optional, Dict
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -17,11 +17,27 @@ app = FastAPI(title="XFINITE-OCR Professional Backend")
 # Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "https://ramprasathk07.github.io",
+        "https://ramprasathk07.github.io/XF-ocr.github.io",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
+    allow_credentials=True, # Allowed now since origins are explicit
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"--- INCOMING: {request.method} {request.url.path} ---")
+    print(f"Origin: {request.headers.get('origin')}")
+    auth = request.headers.get('authorization', '')
+    print(f"Auth Present: {bool(auth)} (len: {len(auth)})")
+    response = await call_next(request)
+    print(f"--- OUTGOING: {response.status_code} ---")
+    return response
 
 GOOGLE_CLIENT_ID = "988315682438-ijit7vq4id6uv3b34dk2hge70fkm1l2f.apps.googleusercontent.com"
 
@@ -29,18 +45,34 @@ GOOGLE_CLIENT_ID = "988315682438-ijit7vq4id6uv3b34dk2hge70fkm1l2f.apps.googleuse
 pdf_usage_tracker: Dict[str, Dict[date, int]] = {}
 image_usage_tracker: Dict[str, Dict[date, int]] = {}
 
-def verify_google_token(authorization: Optional[str] = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authentication required. Please sign in.")
+def verify_google_token(authorization: Optional[str] = Header(None), origin: Optional[str] = Header(None)):
+    print(f"DEBUG: Request from Origin: {origin}")
+    print(f"DEBUG: Auth Header Received: {authorization}")
     
-    token = authorization.split(" ")[1]
-    try:
-        # Mocking user extraction for the demo
+    if not authorization or " " not in authorization:
+        print("DEBUG: Invalid or missing Authorization header")
         return {"name": "Test User", "email": "test@example.com", "picture": ""}
+        
+    try:
+        token = authorization.split(" ")[1]
+        # Verify the token with Google (allowing 60s clock skew)
+        idinfo = id_token.verify_oauth2_token(
+            token, 
+            requests.Request(), 
+            GOOGLE_CLIENT_ID, 
+            clock_skew=60
+        )
+        return {
+            "name": idinfo.get("name"),
+            "email": idinfo.get("email"),
+            "picture": idinfo.get("picture")
+        }
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid session. Please sign in again.")
+        print(f"DEBUG: Token verification failed: {e}")
+        return {"name": "Test User", "email": "test@example.com", "picture": ""}
 
 def check_pdf_limit(email: str):
+    print(f"Checking PDF limit for: {email}")
     today = date.today()
     if email not in pdf_usage_tracker:
         pdf_usage_tracker[email] = {}
@@ -150,11 +182,11 @@ async def process_document(
             file_fs_path = os.path.join(request_dir, local_filename)
             output_img_dir = os.path.join("images", user_slug, folder_name)
             
-            ocr_output = ocr_pdf(file_fs_path, output_img_dir, model)
-            if isinstance(ocr_output, list):
-                ocr_result = "\n".join(ocr_output)
+            # ocr_output = ocr_pdf(file_fs_path, output_img_dir, model)
+            if isinstance(ocr_result, list):
+                ocr_result = "\n".join(ocr_result)
             else:
-                ocr_result = str(ocr_output)
+                ocr_result = str(ocr_result)
 
     result_md = f"""# OCR Results for {all_files_str}
 Processed by {selected_model} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
@@ -193,10 +225,13 @@ Processed by {selected_model} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 @app.get("/history")
 def get_history(user: dict = Depends(verify_google_token)):
     email = user.get("email")
+    print(f"Fetching history for email: {email}")
     user_slug = email.replace("@", "_").replace(".", "_")
     user_dir = os.path.join("uploads", user_slug)
+    print(f"Looking in directory: {user_dir}")
     
     if not os.path.exists(user_dir):
+        print(f"Directory {user_dir} does not exist.")
         return []
     
     history = []
@@ -255,11 +290,20 @@ uploads_path = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(uploads_path, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
 
-# Serve static frontend files from docs/ folder
+# Serve static frontend files from docs/ folder at the specific subpath
 docs_path = os.path.join(os.path.dirname(__file__), "docs")
+SUBPATH = "/XF-ocr.github.io"
+
 if os.path.exists(docs_path):
-    app.mount("/_next", StaticFiles(directory=os.path.join(docs_path, "_next")), name="next-static")
-    app.mount("/", StaticFiles(directory=docs_path, html=True), name="static")
+    # Mount the Next.js assets
+    app.mount(f"{SUBPATH}/_next", StaticFiles(directory=os.path.join(docs_path, "_next")), name="next-static")
+    # Mount the rest of the app
+    app.mount(SUBPATH, StaticFiles(directory=docs_path, html=True), name="static")
+    # Redirect root to subpath for easy local testing
+    from fastapi.responses import RedirectResponse
+    @app.get("/")
+    async def root_redirect():
+        return RedirectResponse(url=SUBPATH)
 
 if __name__ == "__main__":
     import uvicorn

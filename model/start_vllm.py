@@ -84,6 +84,7 @@ def build_command(model_name: str):
 
 # ---------------- START SERVER ----------------
 def start(model_name: str):
+    process = None
     try:
         stop_existing_server()
 
@@ -105,6 +106,8 @@ def start(model_name: str):
         logger.info(f"✅ vLLM started (PID={process.pid})")
     except Exception as e:
         logger.error(f"❌ Failed to start vLLM server: {e}")
+        # If build_command failed, process is still None.
+        # We might want to raise here or return None.
     
     return process
 
