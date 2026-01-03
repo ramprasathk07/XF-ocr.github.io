@@ -4,9 +4,9 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
   output: 'export',
-  // Replace 'xfinite-ocr' with your actual repository name
-  basePath: isProd ? '/xfinite-ocr' : '',
-  assetPrefix: isProd ? '/xfinite-ocr/' : '',
+  // Exactly matching your repository name
+  basePath: isProd ? '/XF-ocr.github.io' : '',
+  assetPrefix: isProd ? '/XF-ocr.github.io/' : '',
   trailingSlash: true,
   images: {
     unoptimized: true,

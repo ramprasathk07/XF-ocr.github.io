@@ -98,6 +98,22 @@ body {
   cursor: pointer;
 }
 
+.nav-btn-secondary {
+  background: transparent;
+  color: #fff;
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 99px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 /* Layout Body */
 .layout-body {
   display: flex;

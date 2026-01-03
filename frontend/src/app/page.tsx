@@ -27,7 +27,7 @@ interface HistoryItem {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/xfinite-ocr' : '');
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/XF-ocr.github.io' : '');
 
 export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -106,12 +106,19 @@ export default function Dashboard() {
         const user = JSON.parse(jsonPayload);
         user.token = response.credential;
 
+        localStorage.setItem('user', JSON.stringify(user));
         setCurrentUser(user);
         showToast(`Welcome back, ${user.given_name || user.name}!`);
       } catch (err) {
         showToast("Login identification failed. Please try again.");
       }
     };
+
+    // Load user from localStorage
+    const savedUser = localStorage.getItem('user');
+    if (savedUser && !currentUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
 
     if (typeof window !== 'undefined' && (window as any).google) {
       initializeGoogleSignIn();
@@ -195,6 +202,7 @@ export default function Dashboard() {
     if ((window as any).google) {
       (window as any).google.accounts.id.disableAutoSelect();
     }
+    localStorage.removeItem('user');
     setCurrentUser(null);
     setHistory([]);
     setQuota(null);
@@ -241,10 +249,13 @@ export default function Dashboard() {
           {!currentUser ? (
             <div id="g_id_signin_btn"></div>
           ) : (
-            <div className="user-profile">
-              <img id="user-avatar" src={currentUser.picture} alt="User" />
-              <span id="user-name">{currentUser.given_name || currentUser.name}</span>
-            </div>
+            <>
+              <div className="user-profile">
+                <img id="user-avatar" src={currentUser.picture} alt="User" />
+                <span id="user-name">{currentUser.given_name || currentUser.name}</span>
+              </div>
+              <button onClick={handleSignOut} className="nav-btn-secondary">Logout</button>
+            </>
           )}
           <button className="nav-btn-primary">Get Started</button>
         </div>

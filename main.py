@@ -141,7 +141,7 @@ async def process_document(
     remaining_pdfs = 3 - pdf_usage_tracker.get(email, {}).get(today, 0)
     remaining_images = 40 - image_usage_tracker.get(email, {}).get(today, 0)
 
-    results = "No PDF processing required."
+    ocr_result = "No PDF processing required."
     ## add the OCR 
     for file_details in saved_files:
         if file_details["type"] == "pdf":
@@ -150,11 +150,11 @@ async def process_document(
             file_fs_path = os.path.join(request_dir, local_filename)
             output_img_dir = os.path.join("images", user_slug, folder_name)
             
-            # results = ocr_pdf(file_fs_path, output_img_dir, model)
-            if isinstance(results, list):
-                ocr_result = "\n".join(results)
+            ocr_output = ocr_pdf(file_fs_path, output_img_dir, model)
+            if isinstance(ocr_output, list):
+                ocr_result = "\n".join(ocr_output)
             else:
-                ocr_result = str(results)
+                ocr_result = str(ocr_output)
 
     result_md = f"""# OCR Results for {all_files_str}
 Processed by {selected_model} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
