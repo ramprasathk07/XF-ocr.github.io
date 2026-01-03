@@ -15,7 +15,7 @@ interface HealthData {
     components: ComponentHealth[];
 }
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
 export default function StatusPage() {
     const [health, setHealth] = useState<HealthData | null>(null);
