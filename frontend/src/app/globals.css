@@ -797,7 +797,67 @@ a.history-item {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 4px 12px;
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .layout-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-new {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-section {
+    margin-bottom: 16px;
+  }
+
+  .dashboard-main {
+    padding: 20px;
+  }
+
+  .dashboard-grid {
+    flex-direction: column;
+    height: auto;
+    gap: 20px;
+  }
+
+  .config-panel {
+    width: 100%;
+  }
+
+  .preview-panel {
+    min-height: 400px;
+  }
+
+  .split-view-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+  }
+
+  .split-pane {
+    height: 500px;
+  }
+  
+  .nav-left {
+    gap: 16px;
+  }
+  
+  .nav-links {
+    display: none; /* Hide links on very small screens or move to a menu */
+  }
+  
+  .nav-right .nav-btn-primary {
+    display: none;
+  }
+}
   border-radius: 6px;
   font-size: 12px;
   cursor: pointer;

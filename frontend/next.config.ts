@@ -8,9 +8,6 @@ const nextConfig: NextConfig = {
   basePath: isProd ? '/XF-ocr.github.io' : undefined,
   assetPrefix: isProd ? '/XF-ocr.github.io/' : undefined,
   trailingSlash: true,
-  images: {
-    unoptimized: true,
-  },
 };
 
 export default nextConfig;

@@ -26,7 +26,7 @@ interface HistoryItem {
   model: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const API_BASE = "https://unmonarchical-stalked-lea.ngrok-free.dev";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/XF-ocr.github.io' : '');
 
 export default function Dashboard() {
@@ -70,6 +70,11 @@ export default function Dashboard() {
       const res = await fetch(`${API_BASE}/usage`, {
         headers: { 'Authorization': `Bearer ${currentUser.token}` }
       });
+      if (res.status === 401) {
+        handleSignOut();
+        showToast("Session expired. Please sign in again.");
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setQuota(data);
@@ -85,6 +90,10 @@ export default function Dashboard() {
       const res = await fetch(`${API_BASE}/history`, {
         headers: { 'Authorization': `Bearer ${currentUser.token}` }
       });
+      if (res.status === 401) {
+        handleSignOut();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setHistory(data);

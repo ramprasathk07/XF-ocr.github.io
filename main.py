@@ -21,7 +21,8 @@ app.add_middleware(
         "https://ramprasathk07.github.io",
         "https://ramprasathk07.github.io/XF-ocr.github.io",
         "http://localhost:3000",
-        "http://127.0.0.1:3000"
+        "http://127.0.0.1:3000",
+        "http://192.168.52.1:3000"
     ],
     allow_credentials=True, # Allowed now since origins are explicit
     allow_methods=["*"],
@@ -70,7 +71,8 @@ def verify_google_token(authorization: Optional[str] = Header(None), origin: Opt
         }
     except Exception as e:
         print(f"DEBUG: Token verification failed: {e}")
-        return {"name": "Test User", "email": "test@example.com", "picture": ""}
+        # Return 401 so frontend knows to re-authenticate
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 def check_pdf_limit(email: str):
     print(f"Checking PDF limit for: {email}")
