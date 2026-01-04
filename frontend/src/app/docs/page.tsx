@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/XF-ocr.github.io' : '');
+
 export default function DocsPage() {
     return (
         <div id="app">
@@ -7,7 +9,7 @@ export default function DocsPage() {
             <header className="navbar">
                 <div className="nav-left">
                     <div className="logo">
-                        <img src="/logo.png" alt="Xfinite" className="logo-img" />
+                        <img src={`${BASE_PATH}/logo.png`} alt="Xfinite" className="logo-img" />
                         <span>Xfinite</span>
                     </div>
                     <nav className="nav-links">

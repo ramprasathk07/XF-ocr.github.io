@@ -56,11 +56,12 @@ def verify_google_token(authorization: Optional[str] = Header(None), origin: Opt
     try:
         token = authorization.split(" ")[1]
         # Verify the token with Google (allowing 60s clock skew)
+        # Note: The parameter name is 'clock_skew_in_seconds' in some versions of google-auth
         idinfo = id_token.verify_oauth2_token(
             token, 
             requests.Request(), 
             GOOGLE_CLIENT_ID, 
-            clock_skew=60
+            clock_skew_in_seconds=60
         )
         return {
             "name": idinfo.get("name"),
@@ -149,7 +150,7 @@ async def process_document(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     folder_name = f"{timestamp}_{request_id}"
     user_slug = email.replace("@", "_").replace(".", "_")
-    request_dir = os.path.join("uploads", user_slug, folder_name)
+    request_dir = os.path.join(UPLOADS_DIR, user_slug, folder_name)
     os.makedirs(request_dir, exist_ok=True)
     
     saved_files = []
@@ -180,7 +181,7 @@ async def process_document(
             # Use real filesystem path
             local_filename = file_details["original_name"].replace(" ", "_")
             file_fs_path = os.path.join(request_dir, local_filename)
-            output_img_dir = os.path.join("images", user_slug, folder_name)
+            output_img_dir = os.path.join(UPLOADS_DIR, "images", user_slug, folder_name)
             
             # ocr_output = ocr_pdf(file_fs_path, output_img_dir, model)
             if isinstance(ocr_result, list):
@@ -227,7 +228,7 @@ def get_history(user: dict = Depends(verify_google_token)):
     email = user.get("email")
     print(f"Fetching history for email: {email}")
     user_slug = email.replace("@", "_").replace(".", "_")
-    user_dir = os.path.join("uploads", user_slug)
+    user_dir = os.path.join(UPLOADS_DIR, user_slug)
     print(f"Looking in directory: {user_dir}")
     
     if not os.path.exists(user_dir):
@@ -286,9 +287,13 @@ def health_check():
     }
 
 # Static file mounts
-uploads_path = os.path.join(os.path.dirname(__file__), "uploads")
-os.makedirs(uploads_path, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+
+# Static file setup - usage of absolute path to ensure consistency
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 # Serve static frontend files from docs/ folder at the specific subpath
 docs_path = os.path.join(os.path.dirname(__file__), "docs")
