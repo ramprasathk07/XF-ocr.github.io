@@ -5,6 +5,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from typing import List, Optional
+from preprocess.image_processor import ImageProcessor
+from PIL import Image
 
 import fitz  # PyMuPDF
 from logger import setup_logger
@@ -28,32 +30,72 @@ def get_zoom_matrix(dpi: int) -> fitz.Matrix:
     return fitz.Matrix(zoom, zoom)
 
 
+# def render_pages(
+#     pdf_path: str, 
+#     page_nums: List[int], 
+#     output_dir: str, 
+#     dpi: int
+# ) -> List[str]:
+#     """
+#     Renders a subset of pages from a PDF to PNG images.
+    
+#     Args:
+#         pdf_path: Path to the input PDF file.
+#         page_nums: List of page numbers (0-indexed) to render.
+#         output_dir: Directory to save generated images.
+#         dpi: Dots Per Inch for rendering quality.
+        
+#     Returns:
+#         List of paths to the generated image files.
+#     """
+#     results: List[str] = []
+    
+#     # Error handling: Open Doc
+#     try:
+#         doc = fitz.open(pdf_path)
+#     except Exception as e:
+#         logger.error(f"Failed to open PDF in worker: {e}", exc_info=True)
+#         return []
+
+#     mat = get_zoom_matrix(dpi)
+#     stem = pathlib.Path(pdf_path).stem
+
+#     for page_num in page_nums:
+#         try:
+#             page = doc.load_page(page_num)
+            
+#             # alpha=False avoids RGBA, making it OCR friendly (RGB output)
+#             pix = page.get_pixmap(matrix=mat, alpha=False)
+            
+#             output_filename = f"{stem}_p{page_num}.png"
+#             output_path = os.path.join(output_dir, output_filename)
+            
+#             # Saving as PNG (lossless)
+#             pix.save(output_path)
+#             results.append(output_path)
+            
+#         except Exception as e:
+#             # Catch specific page errors so one bad page doesn't crash the worker
+#             logger.error(f"Error rendering page {page_num}: {e}")
+#             continue
+
+#     doc.close()
+#     return results
+
+
 def render_pages(
-    pdf_path: str, 
-    page_nums: List[int], 
-    output_dir: str, 
+    pdf_path: str,
+    page_nums: List[int],
+    output_dir: str,
     dpi: int
 ) -> List[str]:
-    """
-    Renders a subset of pages from a PDF to PNG images.
-    
-    Args:
-        pdf_path: Path to the input PDF file.
-        page_nums: List of page numbers (0-indexed) to render.
-        output_dir: Directory to save generated images.
-        dpi: Dots Per Inch for rendering quality.
-        
-    Returns:
-        List of paths to the generated image files.
-    """
     results: List[str] = []
-    
-    # Error handling: Open Doc
+
     try:
         doc = fitz.open(pdf_path)
     except Exception as e:
         logger.error(f"Failed to open PDF in worker: {e}", exc_info=True)
-        return []
+        return results
 
     mat = get_zoom_matrix(dpi)
     stem = pathlib.Path(pdf_path).stem
@@ -61,25 +103,31 @@ def render_pages(
     for page_num in page_nums:
         try:
             page = doc.load_page(page_num)
-            
-            # alpha=False avoids RGBA, making it OCR friendly (RGB output)
+
+            # Render page → pixmap (RGB)
             pix = page.get_pixmap(matrix=mat, alpha=False)
-            
+
+            # Pixmap → PIL Image (NO disk I/O)
+            img = Image.frombytes(
+                "RGB",
+                (pix.width, pix.height),
+                pix.samples
+            )
+
+            # Apply VLM-safe preprocessing
+            img = ImageProcessor.process_image(img)
+
             output_filename = f"{stem}_p{page_num}.png"
             output_path = os.path.join(output_dir, output_filename)
-            
-            # Saving as PNG (lossless)
-            pix.save(output_path)
+
+            img.save(output_path, format="PNG", optimize=True)
             results.append(output_path)
-            
+
         except Exception as e:
-            # Catch specific page errors so one bad page doesn't crash the worker
-            logger.error(f"Error rendering page {page_num}: {e}")
-            continue
+            logger.error(f"Error rendering page {page_num}: {e}", exc_info=True)
 
     doc.close()
     return results
-
 
 def chunkify(items: List[int], n: int) -> List[List[int]]:
     """

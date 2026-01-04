@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import Script from 'next/script';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface User {
   name: string;
@@ -26,8 +28,62 @@ interface HistoryItem {
   model: string;
 }
 
-const API_BASE = "https://unmonarchical-stalked-lea.ngrok-free.dev";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+// const API_BASE = "https://unmonarchical-stalked-lea.ngrok-free.dev";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/XF-ocr.github.io' : '');
+
+const DownloadWidget = ({ content, filename }: { content: string, filename: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const downloadFile = (format: string) => {
+    let finalContent = content;
+    let mimeType = 'text/plain';
+    let ext = format;
+
+    if (format === 'json') {
+      finalContent = JSON.stringify({ filename, content, timestamp: new Date().toISOString() }, null, 2);
+      mimeType = 'application/json';
+    } else if (format === 'csv') {
+      finalContent = `"${content.replace(/"/g, '""')}"`;
+      mimeType = 'text/csv';
+    }
+
+    const blob = new Blob([finalContent], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename.replace(/\s+/g, '_')}_extraction.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="download-actions">
+      <button onClick={() => downloadFile('md')} className="btn-action" title="Download Markdown">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        MD
+      </button>
+      <button onClick={() => downloadFile('txt')} className="btn-action">TXT</button>
+      <button onClick={() => downloadFile('json')} className="btn-action">JSON</button>
+      <button onClick={() => downloadFile('csv')} className="btn-action">CSV</button>
+      <button onClick={copyToClipboard} className="btn-action" style={{ marginLeft: '4px', background: copied ? 'rgba(16, 185, 129, 0.1)' : '' }}>
+        {copied ? (
+          <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg><span style={{ color: '#10b981', marginLeft: '4px' }}>Copied</span></>
+        ) : (
+          <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><span style={{ marginLeft: '4px' }}>Copy</span></>
+        )}
+      </button>
+    </div>
+  );
+};
 
 export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -345,9 +401,10 @@ export default function Dashboard() {
                   <p className="model-label">Neural Model</p>
                   <div className="model-list">
                     {[
-                      { id: 'xf1-standard', name: 'XF1 Standard', badge: 'FAST', badgeType: 'fast', desc: 'Blazing fast for simple docs.' },
-                      { id: 'xf3-vision', name: 'XF3 Vision', badge: 'VLM', badgeType: 'vlm', desc: '0.9B VLM for complex visuals.' },
-                      { id: 'xf3-pro', name: 'XF3 Pro', badge: 'NEW', badgeType: 'new', desc: '1B End-to-end reasoning.' },
+                      { id: 'xf1-mini', name: 'XF1 Mini', badge: 'CPU', badgeType: 'fast', desc: 'Blazing fast for simple docs.' },
+                      { id: 'xf3', name: 'XF3', badge: 'FAST', badgeType: 'fast', desc: '1B VLM for General docs.' },
+                      { id: 'xf3-pro', name: 'XF3 Pro', badge: 'VLM', badgeType: 'vlm', desc: '0.9B VLM for complex visuals.' },
+                      { id: 'xf3-large', name: 'XF3 Large', badge: 'VLM-large', badgeType: 'new', desc: '1B End-to-end reasoning.' },
                     ].map(m => (
                       <div key={m.id} className={`model-card ${currentModel === m.id ? 'active' : ''}`} onClick={() => handleModelChange(m.id)}>
                         <div className="model-info"><div className="model-name-row"><span className="model-name">{m.name}</span>{m.badge && <span className={`badge badge-${m.badgeType}`}>{m.badge}</span>}</div><p className="model-desc">{m.desc}</p></div>
@@ -370,9 +427,21 @@ export default function Dashboard() {
                 ) : ocrResult ? (
                   <div className="results-view">
                     <div className="result-card">
-                      <h3>OCR Extraction Result</h3>
-                      <div className="result-meta"><span>Files: {ocrResult.metadata?.filename}</span><span>Model: {ocrResult.metadata?.model}</span></div>
-                      <pre className="ocr-result-pre">{ocrResult.result}</pre>
+                      <div className="result-header-row">
+                        <div>
+                          <h3>OCR Extraction Result</h3>
+                          <div className="result-meta">
+                            <span>Files: {ocrResult.metadata?.filename}</span>
+                            <span>Model: {ocrResult.metadata?.model}</span>
+                          </div>
+                        </div>
+                        <DownloadWidget content={ocrResult.result} filename={ocrResult.metadata?.filename || "result"} />
+                      </div>
+                      <div className="ocr-rendered-view markdown-body">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {ocrResult.result}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -399,10 +468,15 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="split-pane">
-                <div className="pane-header"><span>NEURAL EXTRACTION</span><span>{selectedHistory.model}</span></div>
+                <div className="pane-header">
+                  <span>NEURAL EXTRACTION ({selectedHistory.model})</span>
+                  <DownloadWidget content={selectedHistory.ocrResult} filename={selectedHistory.filename} />
+                </div>
                 <div className="pane-content">
-                  <div className="ocr-rendered-view">
-                    <pre className="ocr-result-pre">{selectedHistory.ocrResult}</pre>
+                  <div className="ocr-rendered-view markdown-body">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {selectedHistory.ocrResult}
+                    </ReactMarkdown>
                   </div>
                 </div>
               </div>

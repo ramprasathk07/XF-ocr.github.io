@@ -40,7 +40,7 @@ async def log_requests(request: Request, call_next):
     print(f"--- OUTGOING: {response.status_code} ---")
     return response
 
-GOOGLE_CLIENT_ID = ""
+GOOGLE_CLIENT_ID = "988315682438-ijit7vq4id6uv3b34dk2hge70fkm1l2f.apps.googleusercontent.com"
 
 # In-memory usage trackers: { email: { date: count } }
 pdf_usage_tracker: Dict[str, Dict[date, int]] = {}
@@ -102,6 +102,129 @@ def check_image_limit(email: str, count: int):
         )
     return current_usage
 
+# @app.post("/process")
+# async def process_document(
+#     files: list[UploadFile] = File(...),
+#     prompt: str = Form(...),
+#     model: str = Form("xf1-standard"),
+#     user: dict = Depends(verify_google_token)
+# ):
+#     email = user.get("email")
+    
+#     # Separate PDFs and images
+#     pdf_files = [f for f in files if f.filename.lower().endswith('.pdf')]
+#     image_files = [f for f in files if not f.filename.lower().endswith('.pdf')]
+    
+#     # Validate image uploads
+#     if len(image_files) > 5:
+#         raise HTTPException(status_code=400, detail="Maximum 5 images allowed per upload.")
+    
+#     if image_files:
+#         check_image_limit(email, len(image_files))
+#         today = date.today()
+#         if email not in image_usage_tracker:
+#             image_usage_tracker[email] = {}
+#         image_usage_tracker[email][today] = image_usage_tracker[email].get(today, 0) + len(image_files)
+    
+#     # Validate PDF uploads
+#     if pdf_files:
+#         check_pdf_limit(email)
+#         for pdf in pdf_files:
+#             mock_page_count = 5 
+#             if mock_page_count > 10:
+#                 raise HTTPException(status_code=400, detail=f"PDF '{pdf.filename}' exceeds limit.")
+#         today = date.today()
+#         if email not in pdf_usage_tracker:
+#             pdf_usage_tracker[email] = {}
+#         pdf_usage_tracker[email][today] = pdf_usage_tracker[email].get(today, 0) + len(pdf_files)
+    
+#     model_labels = {
+#         "xf1-standard": "XF1 Standard (Neural v1.2)",
+#         "xf2-global": "XF2 Global (Multilingual)",
+#         "xf3-vision": "XF3 Vision (Vision Language Model)",
+#         "xf3-pro": "XF3 Pro (End-to-end reasoning)",
+#         "xf3-large": "XF3 Large (High-Res 3B)"
+#     }
+#     selected_model = model_labels.get(model, "Standard Model")
+    
+#     # Unique Request ID and Folder
+#     request_id = str(uuid.uuid4())[:8]
+#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     folder_name = f"{timestamp}_{request_id}"
+#     user_slug = email.replace("@", "_").replace(".", "_")
+#     request_dir = os.path.join(UPLOADS_DIR, user_slug, folder_name)
+#     os.makedirs(request_dir, exist_ok=True)
+    
+#     saved_files = []
+#     for f in files:
+#         safe_name = f.filename.replace(" ", "_")
+#         file_path = os.path.join(request_dir, safe_name)
+#         with open(file_path, "wb") as buf:
+#             shutil.copyfileobj(f.file, buf)
+
+#         saved_files.append({
+#             "original_name": f.filename,
+#             "safe_name": safe_name,
+#             "path": file_path,
+#             "type": "pdf" if safe_name.lower().endswith(".pdf") else "image"
+#         })
+
+#     # Build result
+#     all_files_str = ", ".join([f["original_name"] for f in saved_files])
+#     today = date.today()
+#     remaining_pdfs = 3 - pdf_usage_tracker.get(email, {}).get(today, 0)
+#     remaining_images = 40 - image_usage_tracker.get(email, {}).get(today, 0)
+
+#     ocr_result = "No PDF processing required."
+#     ## add the OCR 
+#     for file_details in saved_files:
+#         if file_details["type"] == "pdf":
+#             # Use real filesystem path
+#             local_filename = file_details["original_name"].replace(" ", "_")
+#             file_fs_path = os.path.join(request_dir, local_filename)
+#             output_img_dir = os.path.join(UPLOADS_DIR, "images", user_slug, folder_name)
+            
+#             ocr_output = ocr_pdf(file_fs_path, output_img_dir, model)
+#             if isinstance(ocr_result, list):
+#                 ocr_result = "\n".join(ocr_result)
+#             else:
+#                 ocr_result = str(ocr_result)
+
+#     result_md = f"""# OCR Results for {all_files_str}
+# Processed by {selected_model} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+# ## Summary
+# - Files: {len(pdf_files)} PDFs, {len(image_files)} Images
+# - Status: Successfully parsed.
+
+# ## OCR Results
+# {ocr_result}
+# ---
+# *Remaining daily quota: {remaining_pdfs} PDFs | {remaining_images} Images*"""
+
+#     # Save result.md
+#     with open(os.path.join(request_dir, "result.md"), "w") as f:
+#         f.write(result_md)
+
+#     # Save metadata.json
+#     metadata = {
+#         "id": request_id,
+#         "filename": all_files_str,
+#         "timestamp": timestamp,
+#         "model": selected_model,
+#         "ocrResult": result_md,
+#         "savedFiles": saved_files
+#     }
+#     with open(os.path.join(request_dir, "metadata.json"), "w") as f:
+#         json.dump(metadata, f)
+
+#     return {
+#         "status": "success",
+#         "result": result_md,
+#         "metadata": metadata
+#     }
+
+
 @app.post("/process")
 async def process_document(
     files: list[UploadFile] = File(...),
@@ -110,34 +233,34 @@ async def process_document(
     user: dict = Depends(verify_google_token)
 ):
     email = user.get("email")
-    
-    # Separate PDFs and images
-    pdf_files = [f for f in files if f.filename.lower().endswith('.pdf')]
-    image_files = [f for f in files if not f.filename.lower().endswith('.pdf')]
-    
-    # Validate image uploads
+
+    # -----------------------------
+    # Separate PDFs and Images
+    # -----------------------------
+    pdf_files = [f for f in files if f.filename.lower().endswith(".pdf")]
+    image_files = [f for f in files if not f.filename.lower().endswith(".pdf")]
+
+    # -----------------------------
+    # Validate limits
+    # -----------------------------
     if len(image_files) > 5:
-        raise HTTPException(status_code=400, detail="Maximum 5 images allowed per upload.")
-    
+        raise HTTPException(status_code=400, detail="Maximum 5 images allowed.")
+
     if image_files:
         check_image_limit(email, len(image_files))
         today = date.today()
-        if email not in image_usage_tracker:
-            image_usage_tracker[email] = {}
+        image_usage_tracker.setdefault(email, {})
         image_usage_tracker[email][today] = image_usage_tracker[email].get(today, 0) + len(image_files)
-    
-    # Validate PDF uploads
+
     if pdf_files:
         check_pdf_limit(email)
-        for pdf in pdf_files:
-            mock_page_count = 5 
-            if mock_page_count > 10:
-                raise HTTPException(status_code=400, detail=f"PDF '{pdf.filename}' exceeds limit.")
         today = date.today()
-        if email not in pdf_usage_tracker:
-            pdf_usage_tracker[email] = {}
+        pdf_usage_tracker.setdefault(email, {})
         pdf_usage_tracker[email][today] = pdf_usage_tracker[email].get(today, 0) + len(pdf_files)
-    
+
+    # -----------------------------
+    # Model Labels
+    # -----------------------------
     model_labels = {
         "xf1-standard": "XF1 Standard (Neural v1.2)",
         "xf2-global": "XF2 Global (Multilingual)",
@@ -146,82 +269,148 @@ async def process_document(
         "xf3-large": "XF3 Large (High-Res 3B)"
     }
     selected_model = model_labels.get(model, "Standard Model")
-    
-    # Unique Request ID and Folder
+
+    # -----------------------------
+    # Create request folder
+    # -----------------------------
     request_id = str(uuid.uuid4())[:8]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    folder_name = f"{timestamp}_{request_id}"
     user_slug = email.replace("@", "_").replace(".", "_")
-    request_dir = os.path.join(UPLOADS_DIR, user_slug, folder_name)
+    request_dir = os.path.join(UPLOADS_DIR, user_slug, f"{timestamp}_{request_id}")
     os.makedirs(request_dir, exist_ok=True)
-    
+
+    # -----------------------------
+    # Save files
+    # -----------------------------
     saved_files = []
     for f in files:
-        safe_filename = f.filename.replace(" ", "_")
-        file_path = os.path.join(request_dir, safe_filename)
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(f.file, buffer)
-        
-        saved_path = f"/uploads/{user_slug}/{folder_name}/{safe_filename}"
-        
+        safe_name = f.filename.replace(" ", "_")
+        file_path = os.path.join(request_dir, safe_name)
+        with open(file_path, "wb") as buf:
+            shutil.copyfileobj(f.file, buf)
+
         saved_files.append({
             "original_name": f.filename,
-            "saved_path": saved_path,
-            "type": "pdf" if f.filename.lower().endswith('.pdf') else "image"
+            "safe_name": safe_name,
+            "path": file_path,
+            "type": "pdf" if safe_name.lower().endswith(".pdf") else "image"
         })
 
-    # Build result
-    all_files_str = ", ".join([f["original_name"] for f in saved_files])
-    today = date.today()
-    remaining_pdfs = 3 - pdf_usage_tracker.get(email, {}).get(today, 0)
-    remaining_images = 40 - image_usage_tracker.get(email, {}).get(today, 0)
+    # -----------------------------
+    # OCR PROCESSING WITH PAGE NUMBERS
+    # -----------------------------
+    ocr_pages = []
+    global_page_no = 1
 
-    ocr_result = "No PDF processing required."
-    ## add the OCR 
-    for file_details in saved_files:
-        if file_details["type"] == "pdf":
-            # Use real filesystem path
-            local_filename = file_details["original_name"].replace(" ", "_")
-            file_fs_path = os.path.join(request_dir, local_filename)
-            output_img_dir = os.path.join(UPLOADS_DIR, "images", user_slug, folder_name)
-            
-            # ocr_output = ocr_pdf(file_fs_path, output_img_dir, model)
-            if isinstance(ocr_result, list):
-                ocr_result = "\n".join(ocr_result)
+    # ---- PDFs first
+    for f in saved_files:
+        if f["type"] == "pdf":
+            try:
+                output_img_dir = os.path.join(UPLOADS_DIR, "images", user_slug, request_id)
+                os.makedirs(output_img_dir, exist_ok=True)
+
+                pdf_pages = ocr_pdf(f["path"], output_img_dir, model)
+
+                for page in pdf_pages:
+                    ocr_pages.append({
+                        "page_no": global_page_no,
+                        "source_type": "pdf",
+                        "source_file": f["original_name"],
+                        "pdf_page_no": page.get("page_index", 0) + 1,
+                        "text": page.get("text", "")
+                    })
+                    global_page_no += 1
+
+            except Exception as e:
+                ocr_pages.append({
+                    "page_no": global_page_no,
+                    "source_type": "pdf",
+                    "source_file": f["original_name"],
+                    "pdf_page_no": None,
+                    "text": f"OCR error: {str(e)}"
+                })
+                global_page_no += 1
+
+    # ---- Images next (virtual pages)
+    for f in saved_files:
+        if f["type"] == "image":
+            try:
+                text = ocr_image(f["path"], model)
+                ocr_pages.append({
+                    "page_no": global_page_no,
+                    "source_type": "image",
+                    "source_file": f["original_name"],
+                    "pdf_page_no": None,
+                    "text": text
+                })
+                global_page_no += 1
+
+            except Exception as e:
+                ocr_pages.append({
+                    "page_no": global_page_no,
+                    "source_type": "image",
+                    "source_file": f["original_name"],
+                    "pdf_page_no": None,
+                    "text": f"OCR error: {str(e)}"
+                })
+                global_page_no += 1
+
+    # -----------------------------
+    # Markdown Formatting
+    # -----------------------------
+    if not ocr_pages:
+        ocr_md = "No text extracted."
+    else:
+        sections = []
+        for p in ocr_pages:
+            if p["source_type"] == "pdf":
+                header = f"## Page {p['page_no']} (PDF: {p['source_file']} — Page {p['pdf_page_no']})"
             else:
-                ocr_result = str(ocr_result)
+                header = f"## Page {p['page_no']} (Image: {p['source_file']})"
 
-    result_md = f"""# OCR Results for {all_files_str}
-Processed by {selected_model} on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            sections.append(f"{header}\n{p['text']}")
+
+        ocr_md = "\n\n".join(sections)
+
+    result_md = f"""# OCR Results
+Processed by **{selected_model}**  
+Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 ## Summary
-- Files: {len(pdf_files)} PDFs, {len(image_files)} Images
-- Status: Successfully parsed.
+- PDFs: {len(pdf_files)}
+- Images: {len(image_files)}
+- Total Pages: {len(ocr_pages)}
 
-## OCR Results
-{ocr_result}
----
-*Remaining daily quota: {remaining_pdfs} PDFs | {remaining_images} Images*"""
+## OCR Output
+{ocr_md}
+"""
 
-    # Save result.md
-    with open(os.path.join(request_dir, "result.md"), "w") as f:
+    # -----------------------------
+    # Save outputs
+    # -----------------------------
+    with open(os.path.join(request_dir, "result.md"), "w", encoding="utf-8") as f:
         f.write(result_md)
 
-    # Save metadata.json
     metadata = {
-        "id": request_id,
-        "filename": all_files_str,
+        "request_id": request_id,
         "timestamp": timestamp,
         "model": selected_model,
-        "ocrResult": result_md,
-        "savedFiles": saved_files
+        "total_pages": len(ocr_pages),
+        "pages": ocr_pages,
+        "files": saved_files
     }
-    with open(os.path.join(request_dir, "metadata.json"), "w") as f:
-        json.dump(metadata, f)
 
+    with open(os.path.join(request_dir, "metadata.json"), "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2)
+
+    # -----------------------------
+    # API RESPONSE
+    # -----------------------------
     return {
         "status": "success",
-        "result": result_md,
+        "total_pages": len(ocr_pages),
+        "pages": ocr_pages,
+        "result_markdown": result_md,
         "metadata": metadata
     }
 

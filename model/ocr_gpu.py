@@ -92,7 +92,7 @@ class OCRGPU:
             logger.info(f"Assigned PaddleOCR task: {prompt}")
 
         results = []
-        
+        page_no = 1
         for i in range(0, len(image_paths), self.batch_size):
             batch = image_paths[i:i + self.batch_size]
             
@@ -136,7 +136,8 @@ class OCRGPU:
                 # Extract results
                 for choice in response.choices:
                     text = choice.message.content
-                    results.append(text)
+                    results.append({"page_no":page_no, "text":text })
+                    page_no += 1
 
             except Exception as e:
                 logger.error(f"Inference error: {e}")

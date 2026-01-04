@@ -12,7 +12,7 @@ def ocr_pdf(pdf_path,output_dir,model):
     logger.info(f"Processing {len(list_of_images)} images")
 
     logger.info(f"Initializing OCR model: {model}")
-    OCR_PROCESSOR = OCRGPU(model)
+    # OCR_PROCESSOR = OCRGPU(model)
     logger.info(f"OCR Model initialized")
 
     results = OCR_PROCESSOR.run_batch(list_of_images)
