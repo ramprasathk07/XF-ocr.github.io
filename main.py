@@ -10,9 +10,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from ocr_model import ocr_pdf
+from ocr_model import ocr_pdf, ocr_image
+
+# Static file setup - usage of absolute path to ensure consistency
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 app = FastAPI(title="XFINITE-OCR Professional Backend")
+
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 # Enable CORS for frontend communication
 app.add_middleware(
@@ -283,9 +290,12 @@ async def process_document(
     # Save files
     # -----------------------------
     saved_files = []
+    all_filenames = []
     for f in files:
         safe_name = f.filename.replace(" ", "_")
-        file_path = os.path.join(request_dir, safe_name)
+        rel_folder = os.path.join(user_slug, f"{timestamp}_{request_id}")
+        file_path = os.path.join(UPLOADS_DIR, rel_folder, safe_name)
+        
         with open(file_path, "wb") as buf:
             shutil.copyfileobj(f.file, buf)
 
@@ -293,8 +303,12 @@ async def process_document(
             "original_name": f.filename,
             "safe_name": safe_name,
             "path": file_path,
+            "saved_path": f"/uploads/{rel_folder}/{safe_name}".replace("\\", "/"),
             "type": "pdf" if safe_name.lower().endswith(".pdf") else "image"
         })
+        all_filenames.append(f.filename)
+
+    all_files_str = ", ".join(all_filenames)
 
     # -----------------------------
     # OCR PROCESSING WITH PAGE NUMBERS
@@ -392,12 +406,14 @@ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         f.write(result_md)
 
     metadata = {
-        "request_id": request_id,
+        "id": request_id, 
+        "filename": all_files_str,
         "timestamp": timestamp,
         "model": selected_model,
         "total_pages": len(ocr_pages),
         "pages": ocr_pages,
-        "files": saved_files
+        "ocrResult": result_md,
+        "savedFiles": saved_files
     }
 
     with open(os.path.join(request_dir, "metadata.json"), "w", encoding="utf-8") as f:
@@ -410,7 +426,7 @@ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         "status": "success",
         "total_pages": len(ocr_pages),
         "pages": ocr_pages,
-        "result_markdown": result_md,
+        "result": result_md,
         "metadata": metadata
     }
 
@@ -435,8 +451,44 @@ def get_history(user: dict = Depends(verify_google_token)):
                 if os.path.isdir(folder_path):
                     meta_path = os.path.join(folder_path, "metadata.json")
                     if os.path.exists(meta_path):
-                        with open(meta_path, "r") as f:
-                            history.append(json.load(f))
+                        with open(meta_path, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                            # --- BACKWARD COMPATIBILITY MAPPING ---
+                            # Frontend expects 'id', 'filename', 'savedFiles', 'ocrResult'
+                            if "id" not in data and "request_id" in data:
+                                data["id"] = data["request_id"]
+                            
+                            if "savedFiles" not in data:
+                                # Map old 'files' or 'saved_files' (if existed)
+                                data["savedFiles"] = data.get("files", [])
+                            
+                            # Ensure savedFiles have relative paths (saved_path)
+                            # Old entries might only have 'path' (absolute)
+                            for file_entry in data.get("savedFiles", []):
+                                if "saved_path" not in file_entry:
+                                    # Fallback: construct from path if possible, or just use filename
+                                    # But since it's a remote setup, absolute paths won't work.
+                                    # If the folder name is the request ID, we can guess.
+                                    safe_name = file_entry.get("safe_name", "")
+                                    file_entry["saved_path"] = f"/uploads/{user_slug}/{folder}/{safe_name}".replace("\\", "/")
+                            
+                            if "filename" not in data:
+                                # Construct filename from savedFiles if possible
+                                names = [f.get("original_name", "") for f in data.get("savedFiles", [])]
+                                data["filename"] = ", ".join(names) if names else "Unknown Document"
+                                
+                            if "ocrResult" not in data:
+                                # Old format might have stored result in 'result' (from /process response)
+                                # or just not stored it in metadata.
+                                # Check if result.md exists in the folder
+                                res_md_path = os.path.join(folder_path, "result.md")
+                                if os.path.exists(res_md_path):
+                                    with open(res_md_path, "r", encoding="utf-8") as rf:
+                                        data["ocrResult"] = rf.read()
+                                else:
+                                    data["ocrResult"] = "No result content available."
+
+                            history.append(data)
     except Exception as e:
         print(f"Error reading history: {e}")
         
@@ -480,11 +532,7 @@ def health_check():
 # Static file mounts
 
 # Static file setup - usage of absolute path to ensure consistency
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
-os.makedirs(UPLOADS_DIR, exist_ok=True)
-
-app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+# Static file setup moved to top
 
 # Serve static frontend files from docs/ folder at the specific subpath
 docs_path = os.path.join(os.path.dirname(__file__), "docs")

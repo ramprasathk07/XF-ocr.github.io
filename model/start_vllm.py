@@ -1,15 +1,22 @@
+
 import subprocess
 import signal
 import sys
 import os
 import time
+import httpx
+
+# ---------------- PATH SETUP ----------------
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
+
 from logger import setup_logger
 
 # ---------------- CONFIG ----------------
 PID_FILE = "vllm_server.pid"
+VLLM_PORT = 8001
+VLLM_HOST = "127.0.0.1"
 
 # ---------------- LOGGER ----------------
 logger = setup_logger(name="vLLM-START", log_dir="./logs")
@@ -26,14 +33,13 @@ def stop_existing_server():
         logger.info(f"🛑 Stopping existing vLLM server (PID={pid})")
         os.kill(pid, signal.SIGINT)
 
-        # wait a bit for clean shutdown
+        # Give vLLM time to shutdown cleanly
         time.sleep(3)
 
     except ProcessLookupError:
         logger.warning("⚠️ Old PID not running")
     except Exception as e:
         logger.error(f"❌ Failed to stop old server: {e}")
-
     finally:
         try:
             os.remove(PID_FILE)
@@ -41,9 +47,28 @@ def stop_existing_server():
             pass
 
 
+def wait_for_vllm(timeout: int = 120):
+    """Wait until vLLM OpenAI-compatible API is ready"""
+    url = f"http://{VLLM_HOST}:{VLLM_PORT}/v1/models"
+    start = time.time()
+
+    logger.info("⏳ Waiting for vLLM to become ready...")
+
+    while time.time() - start < timeout:
+        try:
+            r = httpx.get(url, timeout=2)
+            if r.status_code == 200:
+                logger.info("✅ vLLM is ready to accept requests")
+                return
+        except Exception:
+            pass
+        time.sleep(1)
+
+    raise RuntimeError("❌ vLLM did not become ready within timeout")
+
+
 def build_command(model_name: str):
     if model_name == "deepseek-ai/DeepSeek-OCR":
-        VLLM_BIN = "/home/kanram/env_paddle/vllm_env/bin/vllm"
         return [
             "vllm", "serve",
             model_name,
@@ -51,23 +76,22 @@ def build_command(model_name: str):
             "vllm.model_executor.models.deepseek_ocr:NGramPerReqLogitsProcessor",
             "--no-enable-prefix-caching",
             "--mm-processor-cache-gb", "0",
+            "--port", str(VLLM_PORT),
         ]
 
     elif model_name == "PaddlePaddle/PaddleOCR-VL":
-        VLLM_BIN = "/home/kanram/env_paddle/vllm_env/bin/vllm"
         return [
             "vllm", "serve",
             model_name,
             "--trust-remote-code",
             "--gpu-memory-utilization", "0.9",
-            "--port", "8000",
             "--no-enable-prefix-caching",
             "--mm-processor-cache-gb", "0",
-            "--max-num-batched-tokens", "16384"
+            "--max-num-batched-tokens", "16384",
+            "--port", str(VLLM_PORT),
         ]
 
     elif model_name == "tencent/HunyuanOCR":
-        VLLM_BIN = "/home/kanram/env_pytorch/vllm_env/bin/vllm"
         return [
             "vllm", "serve",
             model_name,
@@ -75,47 +99,44 @@ def build_command(model_name: str):
             "--dtype", "float16",
             "--gpu-memory-utilization", "0.9",
             "--enforce-eager",
-            "--port", "8000",
+            "--port", str(VLLM_PORT),
         ]
-    
+
     else:
-        logger.error(f"❌ Unsupported model: {model_name}")
-        raise ValueError(f"Unsupported model: {model_name}")
+        raise ValueError(f"❌ Unsupported model: {model_name}")
+
 
 # ---------------- START SERVER ----------------
 def start(model_name: str):
-    process = None
-    try:
-        stop_existing_server()
+    stop_existing_server()
 
-        cmd = build_command(model_name)
+    cmd = build_command(model_name)
 
-        logger.info(f"🚀 Starting vLLM server with model: {model_name}")
-        logger.info("Command: " + " ".join(cmd))
+    logger.info(f"🚀 Starting vLLM server with model: {model_name}")
+    logger.info("Command: " + " ".join(cmd))
 
-        process = subprocess.Popen(
-            cmd,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-            text=True,
-        )
+    process = subprocess.Popen(
+        cmd,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        text=True,
+    )
 
-        with open(PID_FILE, "w") as f:
-            f.write(str(process.pid))
+    with open(PID_FILE, "w") as f:
+        f.write(str(process.pid))
 
-        logger.info(f"✅ vLLM started (PID={process.pid})")
-    except Exception as e:
-        logger.error(f"❌ Failed to start vLLM server: {e}")
-        # If build_command failed, process is still None.
-        # We might want to raise here or return None.
-    
+    # 🔥 CRITICAL FIX: wait until server is actually ready
+    wait_for_vllm()
+
+    logger.info(f"✅ vLLM fully initialized (PID={process.pid})")
     return process
+
 
 # ---------------- MAIN ----------------
 if __name__ == "__main__":
-    model = sys.argv[1] if len(sys.argv) > 1 else "deepseek-ai/DeepSeek-OCR"
+    model = sys.argv[1] if len(sys.argv) > 1 else "xf3-pro"
 
-    proc = start_vllm(model)
+    proc = start(model)
 
     try:
         proc.wait()

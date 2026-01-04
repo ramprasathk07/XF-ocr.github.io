@@ -28,8 +28,8 @@ interface HistoryItem {
   model: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-// const API_BASE = "https://unmonarchical-stalked-lea.ngrok-free.dev";
+// const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const API_BASE = "https://unmonarchical-stalked-lea.ngrok-free.dev";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/XF-ocr.github.io' : '');
 
 const DownloadWidget = ({ content, filename }: { content: string, filename: string }) => {

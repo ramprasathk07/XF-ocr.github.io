@@ -23,7 +23,7 @@ class OCRGPU:
         out_dir: str = "outputs",
         batch_size: int = 1,
     ):
-        self.model_name = model_name
+        
         self.out_dir = out_dir
         self.batch_size = batch_size
         self.temperature = 0.0
@@ -33,14 +33,18 @@ class OCRGPU:
 
         # start_vllm.py would be needed here, assuming 'start' is imported
         from model.start_vllm import start
-        start(model_name)
+        model_map = {
+                    "xf3-pro": "tencent/HunyuanOCR",
+                    "xf3": "PaddlePaddle/PaddleOCR-VL",
+                    "xf3-large": "deepseek-ai/DeepSeek-OCR",
+                }
 
-        # Wait for server to be ready
-        time.sleep(10) 
+        self.model_name = model_map.get(model_name, "PaddlePaddle/PaddleOCR-VL")
+        start(self.model_name)
 
         self.client = OpenAI(
             api_key="EMPTY",
-            base_url="http://localhost:8000/v1",
+            base_url="http://localhost:8001/v1",
             timeout=3600,
         )
 
@@ -87,7 +91,7 @@ class OCRGPU:
         """
         logger.info(f"Processing batch of {len(image_paths)} images with {self.model_name}")
         
-        if self.model_name == "xf1-standard":
+        if self.model_name == "PaddlePaddle/PaddleOCR-VL":
             prompt = self.assign_task_from_prompt(prompt)
             logger.info(f"Assigned PaddleOCR task: {prompt}")
 
@@ -115,7 +119,8 @@ class OCRGPU:
             # Call vLLM
             try:
                 extra_body = {}
-                if self.model_name == "xf3-pro":
+                if self.model_name == "deepseek-ai/DeepSeek-OCR":
+                    self.max_tokens = 4096
                     extra_body = {
                         "skip_special_tokens": False,
                         "vllm_xargs": {
@@ -124,6 +129,7 @@ class OCRGPU:
                             "whitelist_token_ids": [128821, 128822],
                         },
                     }
+
 
                 response = self.client.chat.completions.create(
                     model=self.model_name,
