@@ -101,7 +101,9 @@ export default function Dashboard() {
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        const res = await fetch(`${API_BASE}/health`);
+        const res = await fetch(`${API_BASE}/health`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
         setBackendOnline(res.ok);
       } catch {
         setBackendOnline(false);
@@ -124,7 +126,10 @@ export default function Dashboard() {
     if (!currentUser) return;
     try {
       const res = await fetch(`${API_BASE}/usage`, {
-        headers: { 'Authorization': `Bearer ${currentUser.token}` }
+        headers: {
+          'Authorization': `Bearer ${currentUser.token}`,
+          'ngrok-skip-browser-warning': 'true'
+        }
       });
       if (res.status === 401) {
         handleSignOut();
@@ -144,7 +149,10 @@ export default function Dashboard() {
     if (!currentUser) return;
     try {
       const res = await fetch(`${API_BASE}/history`, {
-        headers: { 'Authorization': `Bearer ${currentUser.token}` }
+        headers: {
+          'Authorization': `Bearer ${currentUser.token}`,
+          'ngrok-skip-browser-warning': 'true'
+        }
       });
       if (res.status === 401) {
         handleSignOut();
@@ -241,7 +249,10 @@ export default function Dashboard() {
     try {
       const response = await fetch(`${API_BASE}/process`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${currentUser.token}` },
+        headers: {
+          'Authorization': `Bearer ${currentUser.token}`,
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: formData
       });
 

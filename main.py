@@ -22,6 +22,7 @@ app = FastAPI(title="XFINITE-OCR Professional Backend")
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 # Enable CORS for frontend communication
+# Using allow_origin_regex to support various ngrok and local origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -29,9 +30,11 @@ app.add_middleware(
         "https://ramprasathk07.github.io/XF-ocr.github.io",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:5173", # Vite default
         "http://192.168.52.1:3000"
     ],
-    allow_credentials=True, # Allowed now since origins are explicit
+    allow_origin_regex=r"https?://.*\.ngrok-free\.(app|dev)",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"]
@@ -41,9 +44,15 @@ app.add_middleware(
 async def log_requests(request: Request, call_next):
     print(f"--- INCOMING: {request.method} {request.url.path} ---")
     print(f"Origin: {request.headers.get('origin')}")
+    print(f"User-Agent: {request.headers.get('user-agent')}")
+    print(f"Skip-Warning: {request.headers.get('ngrok-skip-browser-warning')}")
     auth = request.headers.get('authorization', '')
     print(f"Auth Present: {bool(auth)} (len: {len(auth)})")
+    
     response = await call_next(request)
+    
+    # Ensure CORS headers are present even for internal errors if possible
+    # (CORSMiddleware usually handles this, but logging the status is good)
     print(f"--- OUTGOING: {response.status_code} ---")
     return response
 
