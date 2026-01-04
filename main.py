@@ -40,7 +40,7 @@ async def log_requests(request: Request, call_next):
     print(f"--- OUTGOING: {response.status_code} ---")
     return response
 
-GOOGLE_CLIENT_ID = "988315682438-ijit7vq4id6uv3b34dk2hge70fkm1l2f.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = ""
 
 # In-memory usage trackers: { email: { date: count } }
 pdf_usage_tracker: Dict[str, Dict[date, int]] = {}
