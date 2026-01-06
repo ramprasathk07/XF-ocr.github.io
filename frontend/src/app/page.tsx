@@ -15,8 +15,9 @@ interface User {
 }
 
 interface Quota {
-  pdf: { used: number; limit: number; remaining: number };
-  image: { used: number; limit: number; remaining: number };
+  used: number;
+  limit: number;
+  remaining: number;
 }
 
 interface HistoryItem {
@@ -28,8 +29,8 @@ interface HistoryItem {
   model: string;
 }
 
-// const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-const API_BASE = "https://unmonarchical-stalked-lea.ngrok-free.dev";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+// const API_BASE = "https://unmonarchical-stalked-lea.ngrok-free.dev";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/XF-ocr.github.io' : '');
 
 const DownloadWidget = ({ content, filename }: { content: string, filename: string }) => {
@@ -373,12 +374,17 @@ export default function Dashboard() {
                 DAILY QUOTA
               </div>
               <div className="usage-item">
-                <div className="usage-info"><span>PDF</span><span>{quota.pdf.used}/{quota.pdf.limit}</span></div>
-                <div className="usage-bar-bg"><div className="usage-bar-fill" style={{ width: `${(quota.pdf.used / quota.pdf.limit) * 100}%` }}></div></div>
-              </div>
-              <div className="usage-item">
-                <div className="usage-info"><span>Image</span><span>{quota.image.used}/{quota.image.limit}</span></div>
-                <div className="usage-bar-bg"><div className="usage-bar-fill" style={{ width: `${(quota.image.used / quota.image.limit) * 100}%` }}></div></div>
+                <div className="usage-info"><span>Pages</span><span>{(quota?.used ?? 0)}/{(quota?.limit ?? 40)}</span></div>
+                <div className="usage-bar-bg">
+                  <div
+                    className="usage-bar-fill"
+                    style={{
+                      width: `${Math.min(100, ((quota?.used ?? 0) / (quota?.limit ?? 1)) * 100)}%`,
+                      backgroundColor: ((quota?.used ?? 0) / (quota?.limit ?? 1)) > 0.9 ? '#ef4444' : '#3b82f6'
+                    }}
+                  ></div>
+                </div>
+                <p style={{ fontSize: '10px', marginTop: '4px', opacity: 0.7 }}>{(quota?.remaining ?? 0)} pages remaining today</p>
               </div>
             </div>
           )}
