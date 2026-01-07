@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+google-auth
+google-auth-oauthlib
+openai
+pymupdf
+torch
+pillow
+pyyaml
+sqlalchemy
+psycopg2-binary
+python-dotenv
