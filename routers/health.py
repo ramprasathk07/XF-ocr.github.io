@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter
 from core.metrics import START_TIME, REQUEST_STATS
 from core.auth import GOOGLE_CLIENT_ID
+from core.status_manager import status_manager
 
 router = APIRouter()
 
@@ -54,5 +55,6 @@ def health_check():
             {"name": "Storage Cluster", "status": "operational", "latency": "5ms"},
             {"name": "Auth Gateway", "status": "operational", "latency": "8ms"}
         ],
+        "model_status": status_manager.get_status(),
         "client_id": GOOGLE_CLIENT_ID
     }

@@ -22,12 +22,24 @@ async def load_model(
 ):
     """Pre-warm or load the model into memory (for vLLM/XF3)"""
     from misc.ocr_model import get_processor
-    try:
-        # CRITICAL: Use the raw ID so it matches what /process uses
-        get_processor(model)
-        return {"status": "success", "message": f"Model {model} initialized"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    from core.status_manager import status_manager
+    import threading
+
+    def _load_task(model_name):
+        try:
+            status_manager.set_loading(True, model_name, "Initializing weights...")
+            # CRITICAL: Use the raw ID so it matches what /process uses
+            get_processor(model_name)
+            status_manager.set_loading(False, model_name, "Ready")
+        except Exception as e:
+            status_manager.set_loading(False, model_name, f"Error: {str(e)}")
+
+    # Start loading in background thread
+    thread = threading.Thread(target=_load_task, args=(model,))
+    thread.daemon = True
+    thread.start()
+    
+    return {"status": "success", "message": f"Model {model} loading started in background"}
 
 @router.post("/process")
 async def process_document(

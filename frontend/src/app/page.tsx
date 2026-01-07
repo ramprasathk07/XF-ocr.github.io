@@ -135,25 +135,32 @@ export default function Dashboard() {
   const [selectedHistory, setSelectedHistory] = useState<HistoryItem | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+  const [modelStatus, setModelStatus] = useState<any>(null); // New Model Status from Backend
   const [quota, setQuota] = useState<Quota | null>(null);
   const [isSwitchingModel, setIsSwitchingModel] = useState<string | null>(null);
   const [switchingMessage, setSwitchingMessage] = useState<string>("INITIALIZING ENGINE...");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Health check polling
+  // Health check polling - Fast updates for model loading
   useEffect(() => {
     const checkBackend = async () => {
       try {
         const res = await fetch(`${API_BASE}/health`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
-        setBackendOnline(res.ok);
+        if (res.ok) {
+          const data = await res.json();
+          setBackendOnline(true);
+          if (data.model_status) setModelStatus(data.model_status);
+        } else {
+          setBackendOnline(false);
+        }
       } catch {
         setBackendOnline(false);
       }
     };
     checkBackend();
-    const interval = setInterval(checkBackend, 10000);
+    const interval = setInterval(checkBackend, 2000); // Faster polling (2s)
     return () => clearInterval(interval);
   }, []);
 
@@ -421,12 +428,7 @@ export default function Dashboard() {
           </nav>
         </div>
         <div className="nav-right">
-          {backendOnline !== null && (
-            <div className={`status-badge ${!backendOnline ? 'offline' : ''}`}>
-              <div className={`dot ${backendOnline ? 'dot-green' : 'dot-red'}`}></div>
-              {backendOnline ? 'Backend Online' : 'Backend Offline'}
-            </div>
-          )}
+
 
           <div className={`live-model-box ${currentModel.startsWith('xf3') ? 'vllm-active' : ''}`}>
             <div className="live-dot"></div>
@@ -538,28 +540,28 @@ export default function Dashboard() {
                       { id: 'xf3', name: 'XF3', badge: 'FAST', badgeType: 'fast', desc: '1B VLM for General docs.' },
                       { id: 'xf3-pro', name: 'XF3 Pro', badge: 'VLM', badgeType: 'vlm', desc: '0.9B VLM for complex visuals.' },
                       { id: 'xf3-large', name: 'XF3 Large', badge: 'VLM-large', badgeType: 'new', desc: '1B End-to-end reasoning.' },
-                    ].map(m => (
-                      <div
-                        key={m.id}
-                        className={`model-card ${currentModel === m.id ? (m.id.startsWith('xf3') ? 'active-vllm' : 'active') : ''} ${isSwitchingModel === m.id ? 'switching' : ''}`}
-                        onClick={() => handleModelChange(m.id)}
-                        style={{ position: 'relative' }}
-                      >
-                        <div className="model-info">
-                          <div className="model-name-row">
-                            <span className="model-name">{m.name}</span>
-                            {m.badge && <span className={`badge badge-${m.badgeType}`}>{m.badge}</span>}
-                          </div>
-                          <p className="model-desc">{m.desc}</p>
-                          {isSwitchingModel === m.id && (
-                            <div className="model-card-loading-overlay">
-                              <div className="inline-spinner"></div>
-                              <span style={{ fontSize: '10px', fontFamily: 'monospace' }}>{switchingMessage}</span>
+                    ].map(m => {
+                      const isLoading = modelStatus?.loading?.is_loading && modelStatus?.loading?.model_id === m.id;
+                      const isActive = currentModel === m.id && !isLoading;
+
+                      return (
+                        <div
+                          key={m.id}
+                          className={`model-card ${isActive ? 'active' : ''} ${isLoading ? 'loading-pulse-green' : ''}`}
+                          onClick={() => handleModelChange(m.id)}
+                          style={{ position: 'relative', border: isLoading ? '1px solid #10b981' : '' }}
+                        >
+                          <div className="model-info">
+                            <div className="model-name-row">
+                              <span className="model-name">{m.name}</span>
+                              {m.badge && <span className={`badge badge-${m.badgeType}`}>{m.badge}</span>}
                             </div>
-                          )}
+                            <p className="model-desc">{m.desc}</p>
+                            {/* Loading Overlay Removed - "Nothing else" but green highlighting */}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
                 <div className="upload-zone-wrapper">

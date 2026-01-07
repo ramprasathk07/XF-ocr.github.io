@@ -392,6 +392,24 @@ body {
   box-shadow: 0 0 30px rgba(16, 185, 129, 0.15);
 }
 
+.loading-pulse-green {
+  animation: pulseGreen 1.5s infinite;
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+@keyframes pulseGreen {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
 .model-name-row {
   display: flex;
   align-items: center;
