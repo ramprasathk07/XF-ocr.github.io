@@ -546,7 +546,10 @@ export default function Dashboard() {
                       { id: 'xf3-pro', name: 'XF3 Pro', badge: 'VLM', badgeType: 'vlm', desc: '0.9B VLM for complex visuals.' },
                       { id: 'xf3-large', name: 'XF3 Large', badge: 'VLM-large', badgeType: 'new', desc: '1B End-to-end reasoning.' },
                     ].map(m => {
-                      const isLoading = modelStatus?.loading?.is_loading && modelStatus?.loading?.model_id === m.id;
+                      const isBackendLoading = modelStatus?.loading?.is_loading && modelStatus?.loading?.model_id === m.id;
+                      const isFrontendLoading = isSwitchingModel === m.id;
+                      const isLoading = isBackendLoading || isFrontendLoading;
+
                       const isActive = currentModel === m.id && !isLoading;
 
                       return (
