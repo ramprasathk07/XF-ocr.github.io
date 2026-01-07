@@ -23,7 +23,7 @@ async def load_model(
     """Pre-warm or load the model into memory (for vLLM/XF3)"""
     from misc.ocr_model import get_processor
     try:
-        # Trigger initialization
+        # CRITICAL: Use the raw ID so it matches what /process uses
         get_processor(model)
         return {"status": "success", "message": f"Model {model} initialized"}
     except Exception as e:
@@ -42,13 +42,12 @@ async def process_document(
     image_files = [f for f in files if not f.filename.lower().endswith(".pdf")]
 
     model_labels = {
-        "xf1-standard": "XF1 Standard (Neural v1.2)",
-        "xf2-global": "XF2 Global (Multilingual)",
-        "xf3-vision": "XF3 Vision (Vision Language Model)",
-        "xf3-pro": "XF3 Pro (End-to-end reasoning)",
+        "xf1-mini": "XF1 Mini (High-Speed CPU)",
+        "xf3": "XF3 (Neural v3.0)",
+        "xf3-pro": "XF3 Pro (End-to-end Reasoning)",
         "xf3-large": "XF3 Large (High-Res 3B)"
     }
-    selected_model = model_labels.get(model, "Standard Model")
+    selected_model = model_labels.get(model, f"Model {model}")
 
     request_id = str(uuid.uuid4())[:8]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

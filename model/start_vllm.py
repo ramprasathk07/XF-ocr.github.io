@@ -21,30 +21,47 @@ VLLM_HOST = "127.0.0.1"
 # ---------------- LOGGER ----------------
 logger = setup_logger(name="vLLM-START", log_dir="./logs")
 
-# ---------------- UTILS ----------------
-def stop_existing_server():
+def get_current_vllm_model():
+    """Check which model is currently served by vLLM"""
+    url = f"http://{VLLM_HOST}:{VLLM_PORT}/v1/models"
+    try:
+        r = httpx.get(url, timeout=2)
+        if r.status_code == 200:
+            data = r.json()
+            # vLLM returns a list of models
+            if "data" in data and len(data["data"]) > 0:
+                return data["data"][0]["id"]
+    except Exception:
+        pass
+    return None
+
+def stop_existing_server(requested_model: str = None):
+    """Stop server only if it exists and is different from the requested model"""
+    current_model = get_current_vllm_model()
+    
+    if current_model and requested_model and current_model == requested_model:
+        logger.info(f"✅ Model {requested_model} is already running. Skipping restart.")
+        return False # No need to restart
+        
     if not os.path.exists(PID_FILE):
-        return
+        if current_model:
+             logger.warning(f"⚠️ vLLM running (model={current_model}) but no PID file found. Proceeding with caution.")
+        return True
 
     try:
         with open(PID_FILE, "r") as f:
             pid = int(f.read().strip())
 
-        logger.info(f"🛑 Stopping existing vLLM server (PID={pid})")
+        logger.info(f"🛑 Stopping existing vLLM server (PID={pid}, model={current_model})")
         os.kill(pid, signal.SIGINT)
-
-        # Give vLLM time to shutdown cleanly
         time.sleep(3)
-
-    except ProcessLookupError:
-        logger.warning("⚠️ Old PID not running")
     except Exception as e:
         logger.error(f"❌ Failed to stop old server: {e}")
     finally:
-        try:
-            os.remove(PID_FILE)
-        except OSError:
-            pass
+        if os.path.exists(PID_FILE):
+            try: os.remove(PID_FILE)
+            except: pass
+    return True
 
 
 def wait_for_vllm(timeout: int = 120):
@@ -108,7 +125,10 @@ def build_command(model_name: str):
 
 # ---------------- START SERVER ----------------
 def start(model_name: str):
-    stop_existing_server()
+    should_start = stop_existing_server(model_name)
+    
+    if not should_start:
+        return None
 
     cmd = build_command(model_name)
 
