@@ -64,12 +64,14 @@ export default function StatusPage() {
         } catch (err) {
             console.error("Health check failed", err);
             setError(true);
+            setHealth(null); // Clear stale data on error
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
+        console.log("Status Page Mounted. API_BASE:", API_BASE);
         fetchHealth();
         const interval = setInterval(fetchHealth, 5000);
         return () => clearInterval(interval);
@@ -148,7 +150,7 @@ export default function StatusPage() {
                         Compute Load
                     </div>
                     <div className="creative-metric-value">
-                        {health?.metrics.cpu_load.replace('%', '') || '0'}<span className="creative-metric-unit">%</span>
+                        {(health?.metrics?.cpu_load || '0%').replace('%', '')}<span className="creative-metric-unit">%</span>
                     </div>
                     <div style={{ opacity: 0.6 }}>{generateSparkline([15, 25, 20, 30, 45, 35, 40, 30])}</div>
                 </div>
@@ -159,7 +161,7 @@ export default function StatusPage() {
                         VRAM Usage
                     </div>
                     <div className="creative-metric-value">
-                        {health?.metrics.gpu[0]?.load.replace('%', '') || '0'}<span className="creative-metric-unit">%</span>
+                        {(health?.metrics?.gpu?.[0]?.load || '0%').replace('%', '')}<span className="creative-metric-unit">%</span>
                     </div>
                     <div style={{ opacity: 0.6 }}>{generateSparkline([40, 45, 42, 48, 50, 46, 44, 47])}</div>
                 </div>
@@ -170,9 +172,11 @@ export default function StatusPage() {
                         Throughput
                     </div>
                     <div className="creative-metric-value">
-                        {health?.metrics.requests.total || '0'}<span className="creative-metric-unit">req</span>
+                        {health?.metrics?.requests?.total || '0'}<span className="creative-metric-unit">req</span>
                     </div>
-                    <div style={{ color: '#10b981', fontSize: '12px', fontWeight: 600 }}>Success rate: {health ? Math.round((health.metrics.requests.success / (health.metrics.requests.total || 1)) * 100) : 100}%</div>
+                    <div style={{ color: '#10b981', fontSize: '12px', fontWeight: 600 }}>
+                        Success rate: {health?.metrics?.requests ? Math.round((health.metrics.requests.success / (health.metrics.requests.total || 1)) * 100) : 100}%
+                    </div>
                 </div>
 
                 {/* Infrastructure Details */}

@@ -211,6 +211,18 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    // 1. Restore User Session
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.token) setCurrentUser(parsed);
+      } catch (e) {
+        localStorage.removeItem('user');
+      }
+    }
+
+    // 2. Define Google Callback once
     (window as any).handleCredentialResponse = (response: any) => {
       try {
         const base64Url = response.credential.split('.')[1];
@@ -230,15 +242,15 @@ export default function Dashboard() {
       }
     };
 
-    // Load user from localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser && !currentUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
+    // 3. Initialize Google once
+    const checkGoogle = setInterval(() => {
+      if ((window as any).google) {
+        initializeGoogleSignIn();
+        clearInterval(checkGoogle);
+      }
+    }, 500);
 
-    if (typeof window !== 'undefined' && (window as any).google) {
-      initializeGoogleSignIn();
-    }
+    return () => clearInterval(checkGoogle);
   }, []);
 
   const initializeGoogleSignIn = () => {
