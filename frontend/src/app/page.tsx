@@ -430,9 +430,14 @@ export default function Dashboard() {
         <div className="nav-right">
 
 
-          <div className={`live-model-box ${currentModel.startsWith('xf3') ? 'vllm-active' : ''}`}>
-            <div className="live-dot"></div>
-            <span>{currentModel.startsWith('xf3') ? 'vLLM Serving' : 'Active'}: {currentModel.replace('-', ' ').toUpperCase()}</span>
+          <div className="live-model-box" style={{
+            borderColor: backendOnline ? '#10b981' : '#ef4444',
+            background: backendOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            boxShadow: backendOnline ? '0 0 20px rgba(16, 185, 129, 0.1)' : 'none',
+            color: backendOnline ? '#10b981' : '#ef4444'
+          }}>
+            <div className="live-dot" style={{ background: backendOnline ? '#10b981' : '#ef4444', boxShadow: backendOnline ? '0 0 10px #10b981' : 'none' }}></div>
+            <span>{backendOnline ? 'SYSTEM ONLINE' : 'SYSTEM OFFLINE'}</span>
           </div>
           {!currentUser ? (
             <div id="g_id_signin_btn"></div>
