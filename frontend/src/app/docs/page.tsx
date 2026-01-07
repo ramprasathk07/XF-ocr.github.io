@@ -1,11 +1,21 @@
+"use client";
+
 import Link from 'next/link';
+import { useState } from 'react';
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || (process.env.NODE_ENV === 'production' ? '/XF-ocr.github.io' : '');
 
 export default function DocsPage() {
+    const [activeSection, setActiveSection] = useState('overview');
+
+    const scrollTo = (id: string) => {
+        setActiveSection(id);
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+    };
+
     return (
         <div id="app">
-            {/* Top Navbar */}
             <header className="navbar">
                 <div className="nav-left">
                     <div className="logo">
@@ -15,223 +25,414 @@ export default function DocsPage() {
                     <nav className="nav-links">
                         <Link href="/">Dashboard</Link>
                         <Link href="/docs" className="active">Docs</Link>
+                        <Link href="/status">Status</Link>
                     </nav>
                 </div>
                 <div className="nav-right">
+                    <button className="nav-btn-secondary">API Keys</button>
                     <button className="nav-btn-primary">Get Started</button>
                 </div>
             </header>
 
-            <div className="layout-body">
-                {/* Sidebar */}
-                <aside className="sidebar-new">
-                    <div className="sidebar-section">
-                        <div className="section-header">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                            <span>Documentation</span>
-                        </div>
+            <div className="docs-layout">
+                <aside className="docs-sidebar">
+                    <div className="docs-nav-group">
+                        <p className="docs-nav-title">Introduction</p>
+                        <a href="#overview" onClick={(e) => { e.preventDefault(); scrollTo('overview'); }} className={`docs-nav-item ${activeSection === 'overview' ? 'active' : ''}`}>
+                            <span>📊 Overview</span>
+                        </a>
                     </div>
 
-                    <div className="sidebar-section">
-                        <p className="sidebar-label">TABLE OF CONTENTS</p>
-                        <div className="history-list">
-                            <a href="#overview" className="history-item"><span>📊 OCR Models Overview</span></a>
-                            <a href="#features" className="history-item"><span>🧠 What Each Model Does</span></a>
-                            <a href="#inference" className="history-item"><span>⚡ Inference & Compute</span></a>
-                            <a href="#comparison" className="history-item"><span>🧩 Feature Summary</span></a>
-                            <a href="#recommendations" className="history-item"><span>🧠 Recommendations</span></a>
-                        </div>
+                    <div className="docs-nav-group">
+                        <p className="docs-nav-title">XFinite AI Models Suite</p>
+                        <a href="#xf1-mini" onClick={(e) => { e.preventDefault(); scrollTo('xf1-mini'); }} className={`docs-nav-item ${activeSection === 'xf1-mini' ? 'active' : ''}`}>
+                            <span>⚡ XF1-mini</span>
+                        </a>
+                        <a href="#xf3" onClick={(e) => { e.preventDefault(); scrollTo('xf3'); }} className={`docs-nav-item ${activeSection === 'xf3' ? 'active' : ''}`}>
+                            <span>⚙️ XF3 Balanced</span>
+                        </a>
+                        <a href="#xf3-pro" onClick={(e) => { e.preventDefault(); scrollTo('xf3-pro'); }} className={`docs-nav-item ${activeSection === 'xf3-pro' ? 'active' : ''}`}>
+                            <span>🧠 XF3 Pro</span>
+                        </a>
+                        <a href="#xf3-large" onClick={(e) => { e.preventDefault(); scrollTo('xf3-large'); }} className={`docs-nav-item ${activeSection === 'xf3-large' ? 'active' : ''}`}>
+                            <span>🏗️ XF3-large</span>
+                        </a>
+                    </div>
+
+                    <div className="docs-nav-group">
+                        <p className="docs-nav-title">Reference</p>
+                        <a href="#comparison" onClick={(e) => { e.preventDefault(); scrollTo('comparison'); }} className={`docs-nav-item ${activeSection === 'comparison' ? 'active' : ''}`}>
+                            <span>🔍 Model Comparison</span>
+                        </a>
                     </div>
                 </aside>
 
-                {/* Main Content */}
-                <main className="dashboard-main docs-content">
-                    <div className="dashboard-header">
-                        <h1>📚 OCR Models Documentation</h1>
-                        <p className="dashboard-subtitle">A comparative OCR model cheat-sheet for XFINITE-OCR (2025–2026)</p>
+                <main className="docs-main">
+                    <div className="docs-container">
+                        <section id="overview" className="docs-hero">
+                            <h1>🚀 XFinite AI Models Suite</h1>
+                            <p style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                                Precision-built OCR & Document Intelligence for every scale
+                            </p>
+                            <p>
+                                From lightweight instant extraction to enterprise-grade document reasoning, the XF series is engineered to meet real-world document challenges across speed, accuracy, and intelligence.
+                            </p>
+                        </section>
+
+                        <section id="xf1-mini" className="docs-section">
+                            <div className="docs-feature-card" style={{ borderLeft: '4px solid #3b82f6', background: 'rgba(59, 130, 246, 0.05)' }}>
+                                <h2>⚡ XF1-mini</h2>
+                                <p style={{ fontSize: '18px', fontWeight: 700, color: '#60a5fa', marginBottom: '16px' }}>Fast. Focused. Everyday OCR.</p>
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Best for:</h4>
+                                    <p>Invoices, receipts, forms, scanned PDFs, quick text extraction workflows.</p>
+                                </div>
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>What it does best:</h4>
+                                    <p>XF1-mini is your go-to model for high-speed, cost-efficient document reading. Designed for daily-use documents, it delivers reliable text extraction with minimal latency, making it perfect for web apps, dashboards, and real-time pipelines.</p>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>Key strengths:</h4>
+                                    <ul style={{ color: 'var(--text-secondary)', paddingLeft: '20px', lineHeight: '1.8' }}>
+                                        <li>Optimized for clean & semi-structured documents</li>
+                                        <li>Excellent reading order & layout awareness</li>
+                                        <li>Low compute footprint, ideal for high-throughput APIs</li>
+                                        <li>Stable results even on mobile-scanned documents</li>
+                                    </ul>
+                                </div>
+
+                                <div className="docs-note" style={{ marginTop: '24px', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)' }}>
+                                    <strong style={{ color: '#fff' }}>Why choose XF1-mini?</strong><br />
+                                    When speed matters more than heavy reasoning, XF1-mini keeps things moving without cutting corners.
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="xf3" className="docs-section">
+                            <div className="docs-feature-card" style={{ borderLeft: '4px solid #8b5cf6', background: 'rgba(139, 92, 246, 0.05)' }}>
+                                <h2>⚙️ XF3</h2>
+                                <p style={{ fontSize: '18px', fontWeight: 700, color: '#a78bfa', marginBottom: '16px' }}>Balanced Intelligence for Real-World Documents</p>
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Best for:</h4>
+                                    <p>Business documents, reports, tables, multi-column PDFs, mixed layouts.</p>
+                                </div>
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>What it does best:</h4>
+                                    <p>XF3 is the all-rounder. It understands structure, relationships, and context across complex documents. From dense tables to multi-page PDFs, it delivers consistent, high-quality results without enterprise-level overhead.</p>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>Key strengths:</h4>
+                                    <ul style={{ color: 'var(--text-secondary)', paddingLeft: '20px', lineHeight: '1.8' }}>
+                                        <li>Strong table detection & extraction</li>
+                                        <li>Accurate multi-column and nested layout handling</li>
+                                        <li>Robust on low-quality scans and photocopies</li>
+                                        <li>Ideal balance between accuracy, speed, and cost</li>
+                                    </ul>
+                                </div>
+
+                                <div className="docs-note" style={{ marginTop: '24px', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)' }}>
+                                    <strong style={{ color: '#fff' }}>Why choose XF3?</strong><br />
+                                    If your documents aren’t simple but don’t need heavy reasoning either, XF3 hits the sweet spot.
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="xf3-pro" className="docs-section">
+                            <div className="docs-feature-card" style={{ borderLeft: '4px solid #f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
+                                <h2>🧠 XF3 Pro</h2>
+                                <p style={{ fontSize: '18px', fontWeight: 700, color: '#fbbf24', marginBottom: '16px' }}>Context-Aware OCR with Reasoning</p>
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Best for:</h4>
+                                    <p>Legal documents, multilingual files, contracts, research papers, complex forms.</p>
+                                </div>
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>What it does best:</h4>
+                                    <p>XF3 Pro goes beyond reading text. It understands context. This model is built for documents where meaning matters just as much as characters. It can interpret instructions, handle multilingual content, and respond intelligently to prompts.</p>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>Key strengths:</h4>
+                                    <ul style={{ color: 'var(--text-secondary)', paddingLeft: '20px', lineHeight: '1.8' }}>
+                                        <li>Prompt-driven extraction (ask for specific fields or summaries)</li>
+                                        <li>Strong multilingual understanding</li>
+                                        <li>Handles dense, long-form documents with ease</li>
+                                        <li>Excellent for semantic OCR and document Q&A</li>
+                                    </ul>
+                                </div>
+
+                                <div className="docs-note" style={{ marginTop: '24px', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)' }}>
+                                    <strong style={{ color: '#fff' }}>Why choose XF3 Pro?</strong><br />
+                                    When OCR alone isn’t enough and you need understanding, XF3 Pro steps in.
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="xf3-large" className="docs-section">
+                            <div className="docs-feature-card" style={{ borderLeft: '4px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)' }}>
+                                <h2>🏗️ XF3-large</h2>
+                                <p style={{ fontSize: '18px', fontWeight: 700, color: '#f87171', marginBottom: '16px' }}>Enterprise-Scale Document Intelligence</p>
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>Best for:</h4>
+                                    <p>Large-scale archives, financial records, handwritten documents, noisy scans.</p>
+                                </div>
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>What it does best:</h4>
+                                    <p>XF3-large is built for the hardest OCR problems. It excels in deeply complex layouts, degraded scans, handwriting, and massive document sets. Designed for accuracy-first workflows where precision is non-negotiable.</p>
+                                </div>
+
+                                <div>
+                                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>Key strengths:</h4>
+                                    <ul style={{ color: 'var(--text-secondary)', paddingLeft: '20px', lineHeight: '1.8' }}>
+                                        <li>Superior handwritten text recognition</li>
+                                        <li>Handles historical & low-quality documents</li>
+                                        <li>Deep layout and structure comprehension</li>
+                                        <li>Best-in-class performance for large, complex PDFs</li>
+                                    </ul>
+                                </div>
+
+                                <div className="docs-note" style={{ marginTop: '24px', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)' }}>
+                                    <strong style={{ color: '#fff' }}>Why choose XF3-large?</strong><br />
+                                    For mission-critical workloads where accuracy defines success, XF3-large is the final word.
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="comparison" className="docs-section">
+                            <h2>🔍 Comprehensive Model Comparison</h2>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>A deep dive into the technical capabilities and optimal usage patterns for each neural model in the XFINITE suite.</p>
+                            <div className="docs-table-wrapper">
+                                <table className="docs-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Feature / Parameter</th>
+                                            <th><strong>XF1-mini</strong></th>
+                                            <th><strong>XF3</strong></th>
+                                            <th><strong>XF3 Pro</strong></th>
+                                            <th><strong>XF3-large</strong></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Primary Focus</strong></td>
+                                            <td>Ultra-fast OCR</td>
+                                            <td>Balanced document understanding</td>
+                                            <td>Contextual & semantic OCR</td>
+                                            <td>Accuracy-first enterprise OCR</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Inference Speed</strong></td>
+                                            <td>⚡⚡⚡ Very Fast</td>
+                                            <td>⚡⚡ Fast</td>
+                                            <td>⚡ Moderate</td>
+                                            <td>⚡ Moderate</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Accuracy Level</strong></td>
+                                            <td>⭐⭐</td>
+                                            <td>⭐⭐⭐⭐</td>
+                                            <td>⭐⭐⭐⭐⭐</td>
+                                            <td>⭐⭐⭐⭐⭐⭐</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Compute Cost</strong></td>
+                                            <td>Very Low</td>
+                                            <td>Low–Medium</td>
+                                            <td>Medium</td>
+                                            <td>High</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Best Document Types</strong></td>
+                                            <td>Invoices, receipts, forms</td>
+                                            <td>Reports, tables, multi-column PDFs</td>
+                                            <td>Contracts, legal, research</td>
+                                            <td>Archives, handwritten, noisy scans</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Layout Detection</strong></td>
+                                            <td>Basic</td>
+                                            <td>Advanced</td>
+                                            <td>Advanced+</td>
+                                            <td>Deep hierarchical</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Reading Order</strong></td>
+                                            <td>Good</td>
+                                            <td>Very Good</td>
+                                            <td>Excellent</td>
+                                            <td>Excellent</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Table Extraction</strong></td>
+                                            <td>Simple tables</td>
+                                            <td>Complex tables</td>
+                                            <td>Complex + semantic</td>
+                                            <td>Complex + nested</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Multi-page PDF Support</strong></td>
+                                            <td>Yes</td>
+                                            <td>Yes</td>
+                                            <td>Yes</td>
+                                            <td>Yes (optimized for large PDFs)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Handwritten Text</strong></td>
+                                            <td>❌ Limited</td>
+                                            <td>⚠️ Partial</td>
+                                            <td>⚠️ Partial</td>
+                                            <td>✅ Strong</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Low-Quality Scan</strong></td>
+                                            <td>⚠️ Moderate</td>
+                                            <td>✅ Good</td>
+                                            <td>✅ Very Good</td>
+                                            <td>✅ Excellent</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Multilingual OCR</strong></td>
+                                            <td>⚠️ Limited</td>
+                                            <td>✅ Good</td>
+                                            <td>✅ Strong</td>
+                                            <td>✅ Strong</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Prompt-based Extraction</strong></td>
+                                            <td>❌ No</td>
+                                            <td>❌ No</td>
+                                            <td>✅ Yes</td>
+                                            <td>⚠️ Limited</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Document Q&A</strong></td>
+                                            <td>❌ No</td>
+                                            <td>❌ No</td>
+                                            <td>✅ Yes</td>
+                                            <td>⚠️ Partial</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Semantic Understanding</strong></td>
+                                            <td>❌ None</td>
+                                            <td>⚠️ Structural</td>
+                                            <td>✅ High</td>
+                                            <td>✅ High (layout-driven)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Structured Output (JSON)</strong></td>
+                                            <td>✅ Yes</td>
+                                            <td>✅ Yes</td>
+                                            <td>✅ Yes</td>
+                                            <td>✅ Yes</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Field-specific Extraction</strong></td>
+                                            <td>⚠️ Limited</td>
+                                            <td>✅ Good</td>
+                                            <td>✅ Excellent</td>
+                                            <td>✅ Excellent</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Long-form Document</strong></td>
+                                            <td>❌ Not ideal</td>
+                                            <td>⚠️ Moderate</td>
+                                            <td>✅ Strong</td>
+                                            <td>✅ Very Strong</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Enterprise Scale</strong></td>
+                                            <td>❌ No</td>
+                                            <td>⚠️ Limited</td>
+                                            <td>⚠️ Selective</td>
+                                            <td>✅ Yes</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Recommended API Tier</strong></td>
+                                            <td>Starter / Free</td>
+                                            <td>Pro</td>
+                                            <td>Pro+</td>
+                                            <td>Enterprise</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Ideal Usage Pattern</strong></td>
+                                            <td>High-volume, low latency</td>
+                                            <td>General purpose OCR</td>
+                                            <td>Intelligent workflows</td>
+                                            <td>Mission-critical accuracy</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <div className="docs-cta-modern">
+                            <h2>Ready to architect your intelligence?</h2>
+                            <p>Join the next generation of document workflows. Start exploring the dashboard or integrate our API today.</p>
+                            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+                                <button className="nav-btn-primary" style={{ padding: '14px 40px', fontSize: '16px' }}>Open Dashboard</button>
+                                <button className="nav-btn-secondary" style={{ padding: '14px 40px', fontSize: '16px' }}>Contact Sales</button>
+                            </div>
+                        </div>
+
+                        <footer className="docs-footer-modern">
+                            <div className="docs-footer-grid">
+                                <div className="footer-brand">
+                                    <h3>
+                                        <img src={`${BASE_PATH}/logo.png`} alt="Xfinite" style={{ height: '24px' }} />
+                                        Xfinite
+                                    </h3>
+                                    <p>Modular OCR infrastructure for the AI-first era. Built with precision, scaled with passion.</p>
+                                </div>
+                                <div className="footer-col">
+                                    <h4>Product</h4>
+                                    <ul>
+                                        <li><Link href="/">Dashboard</Link></li>
+                                        <li><Link href="/status">System Status</Link></li>
+                                        <li><a href="#">Pricing</a></li>
+                                        <li><a href="#">Beta Program</a></li>
+                                    </ul>
+                                </div>
+                                <div className="footer-col">
+                                    <h4>Resources</h4>
+                                    <ul>
+                                        <li><Link href="/docs">Documentation</Link></li>
+                                        <li><a href="#">API Reference</a></li>
+                                        <li><a href="#">Support Center</a></li>
+                                        <li><a href="#">Community</a></li>
+                                    </ul>
+                                </div>
+                                <div className="footer-col">
+                                    <h4>Connect</h4>
+                                    <ul>
+                                        <li><a href="#">Twitter / X</a></li>
+                                        <li><a href="#">GitHub</a></li>
+                                        <li><a href="#">LinkedIn</a></li>
+                                        <li><a href="#">Discord</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div className="footer-bottom">
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <span className="status-dot-mini"></span>
+                                    <span>Global Network: <strong>Operational</strong></span>
+                                </div>
+                                <div>&copy; 2026 XFINITE AI. All rights reserved.</div>
+                                <div className="footer-socials">
+                                    <a href="#" className="footer-social-link">Privacy</a>
+                                    <a href="#" className="footer-social-link">Terms</a>
+                                </div>
+                            </div>
+                        </footer>
                     </div>
-
-                    <article className="docs-article">
-                        <section id="overview">
-                            <h2>📊 OCR Models Overview</h2>
-                            <div className="docs-table-wrapper">
-                                <table className="docs-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Model</th>
-                                            <th>Type</th>
-                                            <th>Core OCR</th>
-                                            <th>Other Features</th>
-                                            <th>Compute Notes</th>
-                                            <th>Best Fit</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td><strong>XF1</strong></td>
-                                            <td>Pipeline-based</td>
-                                            <td>Standard text OCR</td>
-                                            <td>External layout + table modules</td>
-                                            <td>Modular pipeline</td>
-                                            <td>Baseline simple OCR</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>XF2</strong></td>
-                                            <td>Classic OCR toolkit</td>
-                                            <td>Line-level OCR, 90+ languages</td>
-                                            <td>Layout analysis, reading order, tables</td>
-                                            <td>CPU-friendly, GPU improves speed</td>
-                                            <td>Multilingual document OCR</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>XF3 Vision</strong></td>
-                                            <td>Vision-Language Model (0.9B)</td>
-                                            <td>OCR + parsing (tables, formulas, charts)</td>
-                                            <td>Layout, reading order, Markdown/JSON</td>
-                                            <td>Resource-efficient, GPU/TPU</td>
-                                            <td>Complex layouts, multilingual</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>XF3 Pro</strong></td>
-                                            <td>End-to-end VLM (1B)</td>
-                                            <td>OCR + spotting (bbox coords)</td>
-                                            <td>Parsing, IE, VQA, translation</td>
-                                            <td>~1B params, one-shot inference</td>
-                                            <td>End-to-end extraction</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>XF3 Large</strong></td>
-                                            <td>Compressed context VLM (3B)</td>
-                                            <td>High-accuracy OCR</td>
-                                            <td>Long-context compression</td>
-                                            <td>~97% accuracy, high-res efficient</td>
-                                            <td>Large document collections</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </section>
-
-                        <section id="features">
-                            <h2>🧠 What Each Model Does</h2>
-
-                            <div className="model-doc-card">
-                                <h3>📍 XF1 </h3>
-                                <p><strong>Type:</strong> Traditional pipeline toolkit combining modules (text detection + layout + tables).</p>
-                                <p><strong>Features:</strong> Basic OCR text extraction and structured extraction via modular tools.</p>
-                                <p><strong>Speed:</strong> Depends on each component; not top performer vs VLMs.</p>
-                                <p><strong>Use When:</strong> You need flexible modular OCR with integration to custom components.</p>
-                            </div>
-
-                            <div className="model-doc-card">
-                                <h3>☀️ XF2 </h3>
-                                <p><strong>Type:</strong> Python OCR toolkit with multilingual detection (~90+ languages).</p>
-                                <ul>
-                                    <li>Line OCR + bounding boxes</li>
-                                    <li>Layout detection (headers, tables, images)</li>
-                                    <li>Reading order detection</li>
-                                    <li>Table recognition modules</li>
-                                </ul>
-                                <p><strong>Best For:</strong> Lightweight document OCR with layout & reading order when LLM integration is not needed.</p>
-                            </div>
-
-                            <div className="model-doc-card">
-                                <h3>📘 XF3 Vision</h3>
-                                <p><strong>Type:</strong> Vision-Language Model (VLM) built for full document parsing.</p>
-                                <ul>
-                                    <li>Recognizes tables, formulas, charts, reading order</li>
-                                    <li>Supports 109 languages (Latin, Cyrillic, Devanagari, Arabic, etc)</li>
-                                    <li>Outputs structured JSON/Markdown</li>
-                                </ul>
-                                <p><strong>Compute:</strong> ~0.9B parameters → good trade-off for structured output without huge GPUs</p>
-                            </div>
-
-                            <div className="model-doc-card">
-                                <h3>🐉 XF3 Pro </h3>
-                                <p><strong>Type:</strong> End-to-end OCR & VLM, trained with RL.</p>
-                                <ul>
-                                    <li>Text spotting (locations)</li>
-                                    <li>Multilingual translation of text images (14+ languages)</li>
-                                    <li>Information extraction (IE), VQA</li>
-                                </ul>
-                                <p><strong>Compute:</strong> ~1B params → relatively lightweight for a VLM</p>
-                            </div>
-
-                            <div className="model-doc-card">
-                                <h3>🧠 XF3 Large </h3>
-                                <p><strong>Type:</strong> VLM optimized for optical token compression</p>
-                                <ul>
-                                    <li>OCR text extraction with high fidelity</li>
-                                    <li>Efficient vision token modeling</li>
-                                    <li>Good for large high-resolution docs</li>
-                                </ul>
-                                <p><strong>Compute:</strong> Uses a specialized encoder + decoder to compress long images into fewer tokens → faster across big documents with maintained accuracy (~97% decoded precision).</p>
-                            </div>
-                        </section>
-
-                        <section id="inference">
-                            <h2>⚡ Inference Time & Compute</h2>
-                            <p className="docs-note">Note: Precise ms/page numbers vary enormously depending on hardware, image size, resolution, and end-task.</p>
-
-                            <div className="docs-table-wrapper">
-                                <table className="docs-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Model</th>
-                                            <th>Estimated Compute</th>
-                                            <th>Latency Trend</th>
-                                            <th>Notes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td>XF2 (Surya)</td><td>Low-Med</td><td>⭐⭐</td><td>Runs on CPU or GPU; basic components</td></tr>
-                                        <tr><td>XF1 (Marker)</td><td>Med</td><td>⭐⭐</td><td>Depends on each pipeline part</td></tr>
-                                        <tr><td>XF3 Vision (0.9B)</td><td>Med</td><td>⭐⭐⭐</td><td>Fast for VLM parsing; resource-efficient</td></tr>
-                                        <tr><td>XF3 Pro (~1B)</td><td>Med</td><td>⭐⭐⭐</td><td>End-to-end one pass OCR + tasks</td></tr>
-                                        <tr><td>XF3 Large (~3B)</td><td>Med-High</td><td>⭐⭐⭐</td><td>Compresses tokens; good for high-res</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <p className="docs-note">Typical rule: under 1B parameters ≈ great for page-by-page inference on mid-range GPUs/CPUs; 3B+ models need stronger GPUs but give deeper context/accuracy. 📈</p>
-                        </section>
-
-                        <section id="comparison">
-                            <h2>🧩 Feature Summary</h2>
-                            <div className="docs-table-wrapper">
-                                <table className="docs-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Model</th>
-                                            <th>OCR Text</th>
-                                            <th>Spotting (bbox)</th>
-                                            <th>Layout Parsing</th>
-                                            <th>Translation</th>
-                                            <th>IE/VQA</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td>XF2 (Surya)</td><td>✔️</td><td>✔️</td><td>✔️</td><td>❌</td><td>❌</td></tr>
-                                        <tr><td>XF1 (Marker)</td><td>✔️</td><td>✔️</td><td>✔️</td><td>❌</td><td>❌</td></tr>
-                                        <tr><td>XF3 Vision</td><td>✔️</td><td>✔️</td><td>✔️</td><td>🟡</td><td>🟡</td></tr>
-                                        <tr><td>XF3 Pro</td><td>✔️</td><td>✔️</td><td>✔️</td><td>✔️</td><td>✔️</td></tr>
-                                        <tr><td>XF3 Large</td><td>✔️</td><td>✔️</td><td>❓</td><td>❓</td><td>❓</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <p className="docs-note">🟡 = inferred capability thanks to structured outputs and VLM context, actual performance depends on integration/finetuning.</p>
-                        </section>
-
-                        <section id="recommendations">
-                            <h2>🧠 Practical Recommendations</h2>
-                            <ul className="docs-recs">
-                                <li><strong>✨ Best for basic OCR pipelines:</strong> XF2 — lightweight, works well with CPU & GPU, easy to integrate.</li>
-                                <li><strong>📄 Best for structured document parsing:</strong> XF3 Vision — excellent at tables, formulas, reading order, multilingual documents.</li>
-                                <li><strong>🧠 Best for semantic OCR + translation + IE:</strong> XF3 Pro — unified end-to-end model with spotting and translation.</li>
-                                <li><strong>📈 Best for large archive throughput:</strong> XF3 Large — efficient token compression + high accuracy when processing many pages.</li>
-                                <li><strong>🛠️ Best for customizable modular workflows:</strong> XF1 — use when you want explicit control over each stage.</li>
-                            </ul>
-                        </section>
-                    </article>
                 </main>
             </div>
         </div>

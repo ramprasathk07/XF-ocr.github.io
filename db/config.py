@@ -4,8 +4,6 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 class Config:
-    # Database Configuration
-    # Example URL: postgresql://user:password@host:port/dbname
     DB_USER = os.getenv("DB_USER", "postgres")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
     DB_HOST = os.getenv("DB_HOST", "localhost")
@@ -18,8 +16,7 @@ class Config:
         encoded_user = urllib.parse.quote_plus(DB_USER)
         encoded_pass = urllib.parse.quote_plus(DB_PASSWORD)
         DATABASE_URL = f"postgresql://{encoded_user}:{encoded_pass}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    
-    # Debug: print URL with masked password
+
     _print_url = DATABASE_URL
     if ":" in DATABASE_URL and "@" in DATABASE_URL:
         _parts = DATABASE_URL.split("@")

@@ -38,7 +38,7 @@ class ProcessedFile(Base):
     safe_name = Column(String)
     file_path = Column(String)
     saved_path = Column(String)
-    file_type = Column(String) # 'pdf' or 'image'
+    file_type = Column(String)
     page_count = Column(Integer)
     
     request = relationship("OCRRequest", back_populates="files")
@@ -50,7 +50,7 @@ class OCRPage(Base):
     request_id = Column(String, ForeignKey("ocr_requests.id"))
     file_id = Column(Integer, ForeignKey("processed_files.id"), nullable=True)
     page_no = Column(Integer)
-    source_type = Column(String) # 'pdf' or 'image'
+    source_type = Column(String)
     source_file = Column(String)
     pdf_page_no = Column(Integer, nullable=True)
     text = Column(Text)
@@ -58,7 +58,6 @@ class OCRPage(Base):
     request = relationship("OCRRequest", back_populates="pages")
     file = relationship("ProcessedFile", back_populates="pages")
 
-# Database setup
 from sqlalchemy.pool import NullPool
 engine = create_engine(config.DATABASE_URL, poolclass=NullPool)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

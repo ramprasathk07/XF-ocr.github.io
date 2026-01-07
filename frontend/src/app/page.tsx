@@ -96,6 +96,8 @@ export default function Dashboard() {
   const [toast, setToast] = useState<string | null>(null);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
+  const [isSwitchingModel, setIsSwitchingModel] = useState<string | null>(null);
+  const [switchingMessage, setSwitchingMessage] = useState<string>("INITIALIZING ENGINE...");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Health check polling
@@ -201,7 +203,7 @@ export default function Dashboard() {
 
   const initializeGoogleSignIn = () => {
     (window as any).google.accounts.id.initialize({
-      client_id: "988315682438-ijit7vq4id6uv3b34dk2hge70fkm1l2f.apps.googleusercontent.com",
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "988315682438-ijit7vq4id6uv3b34dk2hge70fkm1l2f.apps.googleusercontent.com",
       callback: (window as any).handleCredentialResponse,
     });
     const btn = document.getElementById("g_id_signin_btn");
@@ -215,8 +217,35 @@ export default function Dashboard() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const handleModelChange = (model: string) => {
-    setCurrentModel(model);
+  const handleModelChange = (modelId: string) => {
+    if (modelId === currentModel) return;
+    setIsSwitchingModel(modelId);
+
+    const isXF3 = modelId.startsWith('xf3');
+    const messages = isXF3
+      ? ["vLLM: Loading model weights...", "Memory: Allocating KV cache...", "Engine: Pre-warming CUDA cores...", "Ready: Serving vLLM instance"]
+      : ["Loading CPU parameters...", "Optimizing local inference...", "Ready: Engine live"];
+
+    let msgIndex = 0;
+    setSwitchingMessage(messages[0]);
+
+    const interval = setInterval(() => {
+      msgIndex++;
+      if (msgIndex < messages.length - 1) {
+        setSwitchingMessage(messages[msgIndex]);
+      } else {
+        clearInterval(interval);
+      }
+    }, 400);
+
+    // Total mechanical delay
+    setTimeout(() => {
+      setCurrentModel(modelId);
+      setIsSwitchingModel(null);
+      setOcrResult(null);
+      setSelectedHistory(null);
+      showToast(`Switched to ${modelId.toUpperCase()}`);
+    }, messages.length * 350);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,12 +352,24 @@ export default function Dashboard() {
               {backendOnline ? 'Backend Online' : 'Backend Offline'}
             </div>
           )}
+
+          <div className="live-model-box">
+            <div className="live-dot"></div>
+            <span>{currentModel.startsWith('xf3') ? 'vLLM Serving' : 'Active'}: {currentModel.replace('-', ' ').toUpperCase()}</span>
+          </div>
           {!currentUser ? (
             <div id="g_id_signin_btn"></div>
           ) : (
             <>
               <div className="user-profile">
-                <img id="user-avatar" src={currentUser.picture} alt="User" />
+                <img
+                  id="user-avatar"
+                  src={currentUser.picture}
+                  alt={currentUser.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=5c62f5&color=fff`;
+                  }}
+                />
                 <span id="user-name">{currentUser.given_name || currentUser.name}</span>
               </div>
               <button onClick={handleSignOut} className="nav-btn-secondary">Logout</button>
@@ -370,7 +411,7 @@ export default function Dashboard() {
           {quota && (
             <div className="usage-panel sidebar-section">
               <div className="usage-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M2 12h20M12 2v20a15.3 15.3 0 0 1 4-10 15.3 15.3 0 0 1-4-10" /></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></svg>
                 DAILY QUOTA
               </div>
               <div className="usage-item">
@@ -423,8 +464,25 @@ export default function Dashboard() {
                       { id: 'xf3-pro', name: 'XF3 Pro', badge: 'VLM', badgeType: 'vlm', desc: '0.9B VLM for complex visuals.' },
                       { id: 'xf3-large', name: 'XF3 Large', badge: 'VLM-large', badgeType: 'new', desc: '1B End-to-end reasoning.' },
                     ].map(m => (
-                      <div key={m.id} className={`model-card ${currentModel === m.id ? 'active' : ''}`} onClick={() => handleModelChange(m.id)}>
-                        <div className="model-info"><div className="model-name-row"><span className="model-name">{m.name}</span>{m.badge && <span className={`badge badge-${m.badgeType}`}>{m.badge}</span>}</div><p className="model-desc">{m.desc}</p></div>
+                      <div
+                        key={m.id}
+                        className={`model-card ${currentModel === m.id ? 'active' : ''} ${isSwitchingModel === m.id ? 'switching' : ''}`}
+                        onClick={() => handleModelChange(m.id)}
+                        style={{ position: 'relative' }}
+                      >
+                        <div className="model-info">
+                          <div className="model-name-row">
+                            <span className="model-name">{m.name}</span>
+                            {m.badge && <span className={`badge badge-${m.badgeType}`}>{m.badge}</span>}
+                          </div>
+                          <p className="model-desc">{m.desc}</p>
+                          {isSwitchingModel === m.id && (
+                            <div className="model-card-loading-overlay">
+                              <div className="inline-spinner"></div>
+                              <span style={{ fontSize: '10px', fontFamily: 'monospace' }}>{switchingMessage}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -480,7 +538,16 @@ export default function Dashboard() {
                   {selectedHistory.savedFiles[0]?.type === 'pdf' ? (
                     <iframe className="file-preview-frame" src={`${API_BASE}${selectedHistory.savedFiles[0].saved_path}`} />
                   ) : (
-                    <img className="image-preview-fit" src={`${API_BASE}${selectedHistory.savedFiles[0]?.saved_path}`} alt="Original" />
+                    <div className="image-preview-list">
+                      {selectedHistory.savedFiles.map((f: any, idx: number) => (
+                        <img
+                          key={idx}
+                          className="image-preview-item"
+                          src={`${API_BASE}${f.saved_path}`}
+                          alt={`Original ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
