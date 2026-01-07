@@ -45,7 +45,10 @@ export default function StatusPage() {
     const fetchHealth = async () => {
         try {
             const res = await fetch(`${API_BASE}/health`, {
-                headers: { 'Cache-Control': 'no-cache' }
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'ngrok-skip-browser-warning': 'true'
+                }
             });
             if (res.ok) {
                 const data = await res.json();

@@ -278,29 +278,37 @@ export default function Dashboard() {
       }
     }, 400);
 
-    // NEW: Async Backend Preloading
-    if (currentUser) {
-      const formData = new FormData();
-      formData.append('model', modelId);
-      // Fire and forget (backend initializes singleton/vLLM)
-      fetch(`${API_BASE}/load-model`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${currentUser.token}`,
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body: formData
-      }).catch(err => console.error("Backend pre-warm failed", err));
-    }
+    // NEW: Synchronized Backend Preloading
+    const preloadModel = async () => {
+      if (currentUser) {
+        const formData = new FormData();
+        formData.append('model', modelId);
+        try {
+          await fetch(`${API_BASE}/load-model`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${currentUser.token}`,
+              'ngrok-skip-browser-warning': 'true'
+            },
+            body: formData
+          });
+        } catch (err) {
+          console.error("Backend pre-warm failed", err);
+        }
+      }
 
-    // Total mechanical delay
-    setTimeout(() => {
-      setCurrentModel(modelId);
-      setIsSwitchingModel(null);
-      setOcrResult(null);
-      setSelectedHistory(null);
-      showToast(`Switched to ${modelId.toUpperCase()}`);
-    }, messages.length * 350);
+      // Ensure switching overlay disappears AFTER backend is ready & mechanical delay
+      const minDelay = messages.length * 350;
+      setTimeout(() => {
+        setCurrentModel(modelId);
+        setIsSwitchingModel(null);
+        setOcrResult(null);
+        setSelectedHistory(null);
+        showToast(`Switched to ${modelId.toUpperCase()}`);
+      }, minDelay);
+    };
+
+    preloadModel();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
