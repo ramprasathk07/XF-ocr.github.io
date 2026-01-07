@@ -25,7 +25,8 @@ def get_gpu_info():
         return []
 
 @router.get("/health")
-def health_check():
+async def health_check():
+    import asyncio
     uptime_seconds = time.time() - START_TIME
     days, rem = divmod(uptime_seconds, 86400)
     hours, rem = divmod(rem, 3600)
@@ -33,8 +34,14 @@ def health_check():
     
     uptime_str = f"{int(days)}d {int(hours)}h {int(minutes)}m"
     
-    cpu_load = psutil.cpu_percent()
-    memory = psutil.virtual_memory()
+    # Offload system checks to thread
+    def _get_sys_metrics():
+        cpu = psutil.cpu_percent()
+        mem = psutil.virtual_memory()
+        gpu = get_gpu_info()
+        return cpu, mem, gpu
+
+    cpu_load, memory, gpu_info = await asyncio.to_thread(_get_sys_metrics)
     
     return {
         "status": "operational",
@@ -46,7 +53,7 @@ def health_check():
             "memory_usage": f"{memory.percent}%",
             "memory_used": f"{memory.used / (1024**3):.2f} GB",
             "memory_total": f"{memory.total / (1024**3):.2f} GB",
-            "gpu": get_gpu_info(),
+            "gpu": gpu_info,
             "requests": REQUEST_STATS
         },
         "components": [

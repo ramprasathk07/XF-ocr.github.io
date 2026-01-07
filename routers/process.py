@@ -106,7 +106,9 @@ async def process_document(
                 output_img_dir = os.path.join(UPLOADS_DIR, "images", user_slug, request_id)
                 os.makedirs(output_img_dir, exist_ok=True)
 
-                pdf_pages = ocr_pdf(f["path"], output_img_dir, model)
+                # Offload blocking OCR to thread
+                import asyncio
+                pdf_pages = await asyncio.to_thread(ocr_pdf, f["path"], output_img_dir, model)
 
                 for page in pdf_pages:
                     ocr_pages.append({
@@ -131,7 +133,10 @@ async def process_document(
     for f in saved_files:
         if f["type"] == "image":
             try:
-                text = ocr_image(f["path"], model)
+                # Offload blocking OCR to thread
+                import asyncio
+                text = await asyncio.to_thread(ocr_image, f["path"], model)
+                
                 ocr_pages.append({
                     "page_no": global_page_no,
                     "source_type": "image",

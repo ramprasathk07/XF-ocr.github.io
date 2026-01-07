@@ -8,47 +8,54 @@ from core.auth import verify_google_token
 router = APIRouter()
 
 @router.get("/history")
-def get_history(user: dict = Depends(verify_google_token), db: Session = Depends(get_db)):
+async def get_history(user: dict = Depends(verify_google_token), db: Session = Depends(get_db)):
+    import asyncio
+    
     email = user.get("email")
+    # Quick DB query (usually fast enough, but could overlap)
     db_requests = db.query(OCRRequest).filter(OCRRequest.user_email == email).order_by(OCRRequest.timestamp.desc()).all()
     
-    history = []
-    for req in db_requests:
-        meta_path = req.metadata_json_path
-        data = {}
-        if os.path.exists(meta_path):
-            try:
-                with open(meta_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except:
-                pass
-        
-        data["id"] = req.id
-        data["timestamp"] = req.timestamp.strftime("%Y%m%d_%H%M%S")
-        data["model"] = req.model
-        data["total_pages"] = req.total_pages
-        
-        if "savedFiles" not in data or not data["savedFiles"]:
-            data["savedFiles"] = [
-                {
-                    "original_name": f.original_name,
-                    "safe_name": f.safe_name,
-                    "saved_path": f.saved_path,
-                    "type": f.file_type
-                } for f in req.files
-            ]
-        
-        if "filename" not in data:
-            names = [f.original_name for f in req.files]
-            data["filename"] = ", ".join(names) if names else "Unknown Document"
+    def _load_history_files(requests):
+        history_list = []
+        for req in requests:
+            meta_path = req.metadata_json_path
+            data = {}
+            if os.path.exists(meta_path):
+                try:
+                    with open(meta_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except:
+                    pass
             
-        if "ocrResult" not in data:
-            if os.path.exists(req.result_md_path):
-                with open(req.result_md_path, "r", encoding="utf-8") as rf:
-                    data["ocrResult"] = rf.read()
-            else:
-                data["ocrResult"] = "No result content available."
+            data["id"] = req.id
+            data["timestamp"] = req.timestamp.strftime("%Y%m%d_%H%M%S")
+            data["model"] = req.model
+            data["total_pages"] = req.total_pages
+            
+            if "savedFiles" not in data or not data["savedFiles"]:
+                data["savedFiles"] = [
+                    {
+                        "original_name": f.original_name,
+                        "safe_name": f.safe_name,
+                        "saved_path": f.saved_path,
+                        "type": f.file_type
+                    } for f in req.files
+                ]
+            
+            if "filename" not in data:
+                names = [f.original_name for f in req.files]
+                data["filename"] = ", ".join(names) if names else "Unknown Document"
+                
+            if "ocrResult" not in data:
+                if os.path.exists(req.result_md_path):
+                    with open(req.result_md_path, "r", encoding="utf-8") as rf:
+                        data["ocrResult"] = rf.read()
+                else:
+                    data["ocrResult"] = "No result content available."
+            
+            history_list.append(data)
+        return history_list
 
-        history.append(data)
-        
+    # Offload heavy IO loop to thread
+    history = await asyncio.to_thread(_load_history_files, db_requests)
     return history

@@ -562,7 +562,14 @@ export default function Dashboard() {
                               {m.badge && <span className={`badge badge-${m.badgeType}`}>{m.badge}</span>}
                             </div>
                             <p className="model-desc">{m.desc}</p>
-                            {/* Loading Overlay Removed - "Nothing else" but green highlighting */}
+                            {isLoading && (
+                              <div className="model-card-loading-overlay">
+                                <div className="inline-spinner"></div>
+                                <span style={{ fontSize: '10px', fontFamily: 'monospace' }}>
+                                  {modelStatus?.loading?.message || switchingMessage}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )

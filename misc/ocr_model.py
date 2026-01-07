@@ -4,12 +4,19 @@ from misc.logger import setup_logger
 
 logger = setup_logger(name="ocr-model", log_dir="logs")
 
+import threading
+
 # Singleton-ish or factory for processor to avoid re-init
 _processors = {}
+_processor_lock = threading.Lock()
 
 def get_processor(model_name):
-    if model_name not in _processors:
-        _processors[model_name] = OCRGPU(model_name)
+    with _processor_lock:
+        if model_name not in _processors:
+            logger.info(f"Loading processor for {model_name}...")
+            _processors[model_name] = OCRGPU(model_name)
+        else:
+            logger.info(f"Using cached processor for {model_name}")
     return _processors[model_name]
 
 def ocr_pdf(pdf_path, output_dir, model):
